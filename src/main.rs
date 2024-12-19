@@ -1,3 +1,7 @@
+mod args;
+
+use std::env::args;
+
 fn main() {
-    println!("Hello, world!");
+    let _ = args::parse_args(args()).unwrap();
 }
