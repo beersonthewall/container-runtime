@@ -1,4 +1,5 @@
 use std::env::Args;
+use container_runtime_lib::error::ContainerErr;
 
 #[derive(Debug)]
 pub enum Command {
@@ -9,7 +10,7 @@ pub enum Command {
     State{container_id: String},
 }
 
-pub fn parse_args(args: Args) -> Result<Command, ()> {
+pub fn parse_args(args: Args) -> Result<Command, ContainerErr> {
     let args: Vec<String> = args.collect();
     match args.len() {
 	3 => {
@@ -17,16 +18,16 @@ pub fn parse_args(args: Args) -> Result<Command, ()> {
 		"start" => Ok(Command::Start { container_id: args[2].clone() }),
 		"delete" => Ok(Command::Delete { container_id: args[2].clone() }),
 		"state" => Ok(Command::State { container_id: args[2].clone() }),
-		_ => Err(())
+		_ => Err(ContainerErr::invalid_args(&format!("Unrecognized command: {}", args[1])))
 	    }
 	}
 	4 => {
 	    match args[1].as_str() {
 		"create" => Ok(Command::Create { container_id: args[2].clone(), bundle_path: args[3].clone() }),
 		"kill" => Ok(Command::Kill { container_id: args[2].clone(), signal: args[3].clone() }),
-		_ => Err(()),
+		_ => Err(ContainerErr::invalid_args(&format!("Unrecognized command: {}", args[1])))
   	    }
 	},
-	_ => Err(()),
+	_ => Err(ContainerErr::invalid_args("Invalid number of arguments"))
     }
 }

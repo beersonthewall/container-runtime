@@ -1,3 +1,6 @@
+use std::path::Path;
+use crate::error::ContainerErr;
+
 /// A container's config.json
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md
 pub struct Config {
@@ -25,3 +28,8 @@ pub struct Config {
     hostname: String,
 }
 
+impl Config {
+    pub fn load(bundle_path: &Path) -> Result<Self, ContainerErr> {
+	todo!()
+    }
+}
