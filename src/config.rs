@@ -25,10 +25,18 @@ pub struct Config {
     // Linux platform specific configuration
     // https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#linux-container-configuration
     linux: Option<Linux>,
+
+    windows: Option<Windows>,
+
+    solaris: Option<Solaris>,
+
+    vm: Option<VM>,
+
+    zos: Option<Zos>,
 }
 
 impl Config {
-    /// Reads the 
+    /// Reads config.json from the bundle_path, and parses the json
     pub fn load(bundle_path: &Path) -> Result<Self, ContainerErr> {
 	// Get path to config.json
 	let mut pb = PathBuf::new();
@@ -94,6 +102,8 @@ struct User {
     additional_gids: Option<Vec<isize>>,
 }
 
+// Linux platform structs
+
 /// Linux platform specific configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#platform-specific-configuration
 #[derive(Deserialize)]
@@ -152,3 +162,23 @@ struct Device {
     uid: Option<u32>,
     gid: Option<u32>,
 }
+
+// Windows platform structs
+
+#[derive(Deserialize)]
+struct Windows;
+
+// Solaris platform structs
+
+#[derive(Deserialize)]
+struct Solaris;
+
+// Vm platform structs
+
+#[derive(Deserialize)]
+struct VM;
+
+// zos platform structs
+
+#[derive(Deserialize)]
+struct Zos;
