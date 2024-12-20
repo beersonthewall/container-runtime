@@ -22,8 +22,6 @@ pub struct Config {
     // https://github.com/opencontainers/runtime-spec/blob/main/config.md#domainname
     domainname: Option<String>,
 
-    // Linux platform specific configuration
-    // https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#linux-container-configuration
     linux: Option<Linux>,
 
     windows: Option<Windows>,
@@ -82,6 +80,31 @@ struct Process {
     args: Option<Vec<String>>,
     command_line: Option<String>,
     user: User,
+
+    // POSIX process fields
+    rlimits: Option<Vec<RLimit>>,
+
+    // Linux process fields
+    apparmor_profile: Option<String>,
+    //capabilities: todo
+    //no_new_privileges: bool,
+    oom_score_adj: Option<isize>,
+    scheduler: Option<LinuxScheduler>,
+    selinux_label: Option<String>,
+    io_priority: Option<LinuxIOPriority>,
+
+    #[serde(rename = "execCPUAffinity")]
+    exec_cpu_affinity: Option<ExecCPUAffinity>,
+}
+
+/// POSIX process resource limit
+/// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-process
+#[derive(Deserialize)]
+struct RLimit {
+    #[serde(rename = "type")]
+    typ: String,
+    soft: u64,
+    hard: u64,
 }
 
 /// Console Size configuration
@@ -104,8 +127,8 @@ struct User {
 
 // Linux platform structs
 
-/// Linux platform specific configuration
-/// https://github.com/opencontainers/runtime-spec/blob/main/config.md#platform-specific-configuration
+// Linux platform specific configuration
+// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#linux-container-configuration
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct Linux {
@@ -114,6 +137,36 @@ struct Linux {
     time_offsets: Option<TimeOffsets>,
     devices: Option<Vec<Device>>,
     cgroups_path: Option<String>,
+}
+
+/// Linux process configuration for the scheduler
+/// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
+#[derive(Deserialize)]
+struct LinuxScheduler {
+    policy: String,
+    nice: i32,
+    prority: i32,
+    flags: Option<Vec<String>>,
+    runtime: Option<u64>,
+    deadline: Option<u64>,
+    period: Option<u64>,
+}
+
+/// Linux process exec CPU affinity
+/// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
+#[derive(Deserialize)]
+struct ExecCPUAffinity {
+    initial: Option<String>,
+    #[serde(rename = "final")]
+    fnl: Option<String>,
+}
+
+/// Linux process IO priority configuration
+/// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
+#[derive(Deserialize)]
+struct LinuxIOPriority {
+    class: String,
+    priority: isize,
 }
 
 /// Linux Namespace configuration
