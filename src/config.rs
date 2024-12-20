@@ -31,6 +31,8 @@ pub struct Config {
     vm: Option<VM>,
 
     zos: Option<Zos>,
+
+    hooks: Option<Hooks>,
 }
 
 impl Config {
@@ -235,3 +237,27 @@ struct VM;
 
 #[derive(Deserialize)]
 struct Zos;
+
+// Hooks structs
+
+/// POSIX platform hooks
+/// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks
+#[derive(Deserialize)]
+struct Hooks {
+    prestart: Option<Vec<Hook>>,
+    create_runtime: Option<Vec<Hook>>,
+    create_container: Option<Vec<Hook>>,
+    start_container: Option<Vec<Hook>>,
+    poststart: Option<Vec<Hook>>,
+    poststop: Option<Vec<Hook>>,
+}
+
+/// A single Hook configuration
+/// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks
+#[derive(Deserialize)]
+struct Hook {
+    path: String,
+    args: Option<Vec<String>>,
+    env: Option<Vec<String>>,
+    timeout: Option<usize>,
+}
