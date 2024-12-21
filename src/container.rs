@@ -10,26 +10,34 @@ use super::config::Config;
 use super::error::ContainerErr;
 
 pub struct Container {
+    container_id: String,
     config: Config,
 }
 
 impl Container {
-    pub fn create(_container_id: String, mut config: Config) -> Result<Self, ContainerErr> {
+
+    pub fn new(container_id: String, config: Config) -> Self {
+	Self {
+	    container_id,
+	    config,
+	}
+    }
+
+    pub fn create(&mut self) -> Result<(), ContainerErr> {
 	const STACK_SZ: libc::size_t = 1024 * 1024;
 	let stack = unsafe { malloc(STACK_SZ) };
 	if stack.is_null() {
 	    panic!("stack malloc failed");
 	}
 
-	let flags = get_proc_flags(&config);
-	let config_ptr: *mut Config = &mut config;
+	let flags = get_proc_flags(&self.config);
+	let config_ptr: *mut Config = &mut self.config;
 	// Clone child process
 	let child_pid = unsafe {
 	    libc::clone(child, stack.offset(STACK_SZ as isize), flags | libc::SIGCHLD, config_ptr as *mut libc::c_void)
 	};
 	if child_pid == -1 {
 	    let errno = unsafe { *libc::__errno_location() };
-	    
 	    panic!("clone failed errno: {}", errno);
 	}
 
@@ -37,7 +45,7 @@ impl Container {
 	unsafe { waitpid(child_pid, &mut child_status, 0); }
 	if libc::WIFEXITED(child_status) {
 	    println!("child exited okay");
-	    Ok(Container { config })
+	    Ok(())
 	} else {
 	    return Err(ContainerErr::Child(format!("{}", libc::WEXITSTATUS(child_status))));
 	}
