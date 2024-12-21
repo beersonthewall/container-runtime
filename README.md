@@ -17,7 +17,7 @@ docker pull <img-name>
 docker create --name tmp<img-name> <img-name>
 docker export tmp<img-name> | tar -C <img-name>/rootfs -xf -
 docker rm tmp<img-name>
-cd <img-name>/rootfs
+cd <img-name>
 runc spec
 ```
 
