@@ -8,6 +8,7 @@ use std::path::{Path, PathBuf};
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[repr(C)]
 pub struct Config {
     oci_version: String,
     root: Root,
@@ -36,6 +37,7 @@ pub struct Config {
 }
 
 impl Config {
+
     /// Reads config.json from the bundle_path, and parses the json
     pub fn load(bundle_path: &Path) -> Result<Self, ContainerErr> {
 	// Get path to config.json
@@ -49,13 +51,31 @@ impl Config {
             .read_to_string(&mut buf)
             .map_err(|e| ContainerErr::Bundle(e.to_string()))?;
         let config: Self = serde_json::from_str(&buf).map_err(|e| ContainerErr::Bundle(e.to_string()))?;
+	if !config.valid_spec() {
+	    return Err(ContainerErr::Bundle(String::new()))
+	}
+
         Ok(config)
+    }
+
+    pub fn linux_namespaces(&self) -> Option<&[Namespace]> {
+	if let Some(linux) = &self.linux {
+	    Some(&linux.namespaces)
+	} else {
+	    None
+	}
+    }
+
+    fn valid_spec(&self) -> bool {
+	let cwd = Path::new(&self.process.cwd);
+	cwd.is_absolute()
     }
 }
 
 /// Root configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#root
 #[derive(Deserialize, Debug)]
+#[repr(C)]
 struct Root {
     path: String,
     readonly: bool,
@@ -64,6 +84,7 @@ struct Root {
 /// Mount configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#mounts
 #[derive(Deserialize)]
+#[repr(C)]
 struct Mount {
     destination: String,
     source: Option<String>,
@@ -74,6 +95,7 @@ struct Mount {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#mounts
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[repr(C)]
 struct Process {
     terminal: bool,
     console_size: Option<ConsoleSize>,
@@ -102,6 +124,7 @@ struct Process {
 /// POSIX process resource limit
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-process
 #[derive(Deserialize)]
+#[repr(C)]
 struct RLimit {
     #[serde(rename = "type")]
     typ: String,
@@ -111,6 +134,7 @@ struct RLimit {
 
 /// Console Size configuration
 #[derive(Deserialize)]
+#[repr(C)]
 struct ConsoleSize {
     height: usize,
     width: usize,
@@ -120,6 +144,7 @@ struct ConsoleSize {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#user
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[repr(C)]
 struct User {
     uid: isize,
     gid: isize,
@@ -133,6 +158,7 @@ struct User {
 // https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#linux-container-configuration
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[repr(C)]
 struct Linux {
     namespaces: Vec<Namespace>,
     uid_mapings: Option<Vec<UidMapping>>,
@@ -144,6 +170,7 @@ struct Linux {
 /// Linux process configuration for the scheduler
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
 #[derive(Deserialize)]
+#[repr(C)]
 struct LinuxScheduler {
     policy: String,
     nice: i32,
@@ -157,6 +184,7 @@ struct LinuxScheduler {
 /// Linux process exec CPU affinity
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
 #[derive(Deserialize)]
+#[repr(C)]
 struct ExecCPUAffinity {
     initial: Option<String>,
     #[serde(rename = "final")]
@@ -166,6 +194,7 @@ struct ExecCPUAffinity {
 /// Linux process IO priority configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
 #[derive(Deserialize)]
+#[repr(C)]
 struct LinuxIOPriority {
     class: String,
     priority: isize,
@@ -174,17 +203,19 @@ struct LinuxIOPriority {
 /// Linux Namespace configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#namespaces
 #[derive(Deserialize)]
-struct Namespace {
+#[repr(C)]
+pub struct Namespace {
     // TODO: make this an enum?
     #[serde(rename = "type")]
-    typ: String,
-    path: Option<String>,
+    pub typ: String,
+    pub path: Option<String>,
 }
 
 /// User namespace mappings
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#user-namespace-mappings
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[repr(C)]
 struct UidMapping {
     #[serde(rename = "containerID")]
     container_id: u32,
@@ -198,6 +229,7 @@ struct UidMapping {
 /// Offset for Time Namespace
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#offset-for-time-namespace
 #[derive(Deserialize)]
+#[repr(C)]
 struct TimeOffsets {
     secs: i64,
     nanosecs: u32,
@@ -207,6 +239,7 @@ struct TimeOffsets {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#devices
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[repr(C)]
 struct Device {
     #[serde(rename = "type")]
     typ: String,
@@ -221,21 +254,25 @@ struct Device {
 // Windows platform structs
 
 #[derive(Deserialize)]
+#[repr(C)]
 struct Windows;
 
 // Solaris platform structs
 
 #[derive(Deserialize)]
+#[repr(C)]
 struct Solaris;
 
 // Vm platform structs
 
 #[derive(Deserialize)]
+#[repr(C)]
 struct VM;
 
 // zos platform structs
 
 #[derive(Deserialize)]
+#[repr(C)]
 struct Zos;
 
 // Hooks structs
@@ -243,6 +280,7 @@ struct Zos;
 /// POSIX platform hooks
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks
 #[derive(Deserialize)]
+#[repr(C)]
 struct Hooks {
     prestart: Option<Vec<Hook>>,
     create_runtime: Option<Vec<Hook>>,
@@ -255,6 +293,7 @@ struct Hooks {
 /// A single Hook configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks
 #[derive(Deserialize)]
+#[repr(C)]
 struct Hook {
     path: String,
     args: Option<Vec<String>>,

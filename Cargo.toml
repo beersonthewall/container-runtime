@@ -7,7 +7,7 @@ edition = "2021"
 name = "container_runtime_lib"
 
 [[bin]]
-name = "conainer_runtime"
+name = "container_runtime"
 path = "src/main.rs"
 
 [dependencies]

@@ -2,6 +2,7 @@
 pub enum ContainerErr {
     Args(String),
     Bundle(String),
+    Child(String),
 }
 
 impl ContainerErr {

@@ -26,9 +26,12 @@ This will leave you with a root filesystem and a config.json in the <img-name> d
 ### Container Runtime CLI Usage
 
 ```bash
-cargo run -- create <container-id> ./path-to-bundle
-cargo run -- start <container-id>
-cargo run -- kill <container-id> <signal>
-cargo run -- delete <container-id>
-cargo run -- state <container-id>
+container_runtime create <container-id> ./path-to-bundle
+container_runtime start <container-id>
+container_runtime kill <container-id> <signal>
+container_runtime delete <container-id>
+container_runtime state <container-id>
 ```
+
+Note: Certain operations require root
+
