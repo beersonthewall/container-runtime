@@ -32,6 +32,7 @@ impl Container {
 
 	let flags = get_proc_flags(&self.config);
 	let config_ptr: *mut Config = &mut self.config;
+
 	// Clone child process
 	let child_pid = unsafe {
 	    libc::clone(child, stack.offset(STACK_SZ as isize), flags | libc::SIGCHLD, config_ptr as *mut libc::c_void)
