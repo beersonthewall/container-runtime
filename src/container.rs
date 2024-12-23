@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::os::fd::{RawFd, AsRawFd};
+use std::path::PathBuf;
 use libc::{
     c_int,
     setns,
@@ -9,22 +10,23 @@ use libc::{
 use super::config::Config;
 use super::state::State;
 use super::error::ContainerErr;
+use super::ctx::Ctx;
 
 pub struct Container {
-    container_id: String,
+    state: State,
     config: Config,
 }
 
 impl Container {
 
-    pub fn new(container_id: String, config: Config) -> Self {
+    pub fn new(container_id: String, bundle_path: PathBuf, config: Config) -> Self {
 	Self {
-	    container_id,
+	    state: State::new(container_id, bundle_path),
 	    config,
 	}
     }
 
-    pub fn create(&mut self) -> Result<(), ContainerErr> {
+    pub fn create(&mut self, ctx: &Ctx) -> Result<(), ContainerErr> {
 	const STACK_SZ: libc::size_t = 1024 * 1024;
 	let stack = unsafe { malloc(STACK_SZ) };
 	if stack.is_null() {
@@ -46,7 +48,6 @@ impl Container {
 	let mut child_status: c_int = 0;
 	unsafe { waitpid(child_pid, &mut child_status, 0); }
 	if libc::WIFEXITED(child_status) {
-	    println!("child exited okay");
 	    Ok(())
 	} else {
 	    return Err(ContainerErr::Child(format!("{}", libc::WEXITSTATUS(child_status))));
