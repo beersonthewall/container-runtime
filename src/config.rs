@@ -11,7 +11,7 @@ use std::path::{Path, PathBuf};
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct Config {
-    oci_version: String,
+    pub oci_version: String,
     root: Root,
     mounts: Option<Vec<Mount>>,
     process: Process,

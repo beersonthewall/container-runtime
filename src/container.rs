@@ -21,7 +21,7 @@ impl Container {
 
     pub fn new(container_id: String, bundle_path: PathBuf, config: Config) -> Self {
 	Self {
-	    state: State::new(container_id, bundle_path),
+	    state: State::new(container_id, bundle_path, config.oci_version.clone()),
 	    config,
 	}
     }
