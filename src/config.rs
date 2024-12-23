@@ -25,14 +25,6 @@ pub struct Config {
 
     linux: Option<Linux>,
 
-    windows: Option<Windows>,
-
-    solaris: Option<Solaris>,
-
-    vm: Option<VM>,
-
-    zos: Option<Zos>,
-
     hooks: Option<Hooks>,
 }
 
@@ -250,30 +242,6 @@ struct Device {
     uid: Option<u32>,
     gid: Option<u32>,
 }
-
-// Windows platform structs
-
-#[derive(Deserialize)]
-#[repr(C)]
-struct Windows;
-
-// Solaris platform structs
-
-#[derive(Deserialize)]
-#[repr(C)]
-struct Solaris;
-
-// Vm platform structs
-
-#[derive(Deserialize)]
-#[repr(C)]
-struct VM;
-
-// zos platform structs
-
-#[derive(Deserialize)]
-#[repr(C)]
-struct Zos;
 
 // Hooks structs
 
