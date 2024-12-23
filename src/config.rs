@@ -307,7 +307,7 @@ struct Resources {
 #[repr(C)]
 struct Memory {
     limit: Option<i64>,
-    reservatiion: Option<i64>,
+    reservation: Option<i64>,
     swap: Option<i64>,
     kernel: Option<i64>,
     #[serde(rename = "kernelTCP")]
