@@ -1,9 +1,11 @@
+use super::cgroup::{create_cgroup, resolve_cgroup_path};
 use super::config::Config;
 use super::ctx::Ctx;
 use super::error::ContainerErr;
 use super::state::State;
 use libc::{c_int, malloc, setns, waitpid};
 use std::fs::File;
+use std::io::ErrorKind;
 use std::os::fd::{AsRawFd, RawFd};
 use std::path::PathBuf;
 
@@ -21,6 +23,9 @@ impl Container {
     }
 
     pub fn create(&mut self, ctx: &Ctx) -> Result<(), ContainerErr> {
+	// Setup cgroups based on 'resources' config
+	self.resources(ctx)?;
+
         const STACK_SZ: libc::size_t = 1024 * 1024;
         let stack = unsafe { malloc(STACK_SZ) };
         if stack.is_null() {
@@ -56,6 +61,23 @@ impl Container {
                 libc::WEXITSTATUS(child_status)
             )));
         }
+    }
+
+    /// Applies cgroup controller settings
+    fn resources(&self, ctx: &Ctx) -> Result<(), ContainerErr> {
+        let cgroups_path = resolve_cgroup_path(self.config.cgroups_path(),
+					       ctx.cgroups_root(),
+					       self.state.id());
+        // Is the cgroup created?
+        if let Err(e) = std::fs::metadata(&cgroups_path) {
+            if let ErrorKind::NotFound = e.kind() {
+                create_cgroup(&cgroups_path)?;
+            } else {
+                return Err(ContainerErr::IO(e));
+            }
+        }
+
+	Ok(())
     }
 }
 

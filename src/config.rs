@@ -62,6 +62,15 @@ impl Config {
         }
     }
 
+    pub fn cgroups_path(&self) -> Option<&str> {
+        if let Some(linux) = &self.linux {
+            if let Some(path) = &linux.cgroups_path {
+                return Some(&path);
+            }
+        }
+        None
+    }
+
     fn valid_spec(&self) -> bool {
         let cwd = Path::new(&self.process.cwd);
         cwd.is_absolute()

@@ -27,6 +27,10 @@ impl State {
             annotations: HashMap::new(),
         }
     }
+
+    pub fn id(&self) -> &str {
+        &self.container_id
+    }
 }
 
 #[derive(Serialize, Deserialize)]

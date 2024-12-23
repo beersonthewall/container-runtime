@@ -3,6 +3,7 @@ pub enum ContainerErr {
     Args(String),
     Bundle(String),
     Child(String),
+    IO(std::io::Error),
 }
 
 impl ContainerErr {
