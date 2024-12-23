@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 const BASE_DIR: &'static str = "/var/run/generic_brand_container_runtime";
 
 /// Container runtime settings

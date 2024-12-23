@@ -1,5 +1,6 @@
 use crate::error::ContainerErr;
 use serde::{self, Deserialize};
+use log::debug;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
@@ -32,6 +33,7 @@ impl Config {
 
     /// Reads config.json from the bundle_path, and parses the json
     pub fn load(bundle_path: &Path) -> Result<Self, ContainerErr> {
+	debug!("loading config.json");
 	// Get path to config.json
 	let mut pb = PathBuf::new();
 	pb.push(bundle_path);
@@ -47,6 +49,7 @@ impl Config {
 	    return Err(ContainerErr::Bundle(String::new()))
 	}
 
+	debug!("config.json lodaded");
         Ok(config)
     }
 

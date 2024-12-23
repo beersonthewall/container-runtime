@@ -12,6 +12,7 @@ use container_runtime_lib::error::ContainerErr;
 use std::env::args;
 
 fn main() -> Result<(), ContainerErr> {
+    pretty_env_logger::init();
     match args::parse_args(args())? {
         Command::Create {
             container_id,
