@@ -7,6 +7,7 @@ use libc::{
     malloc,
 };
 use super::config::Config;
+use super::state::State;
 use super::error::ContainerErr;
 
 pub struct Container {
