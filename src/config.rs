@@ -1,6 +1,7 @@
 use crate::error::ContainerErr;
 use serde::{self, Deserialize};
 use log::debug;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::{Path, PathBuf};
@@ -160,6 +161,7 @@ struct Linux {
     time_offsets: Option<TimeOffsets>,
     devices: Option<Vec<Device>>,
     cgroups_path: Option<String>,
+    resources: Option<Resources>,
 }
 
 /// Linux process configuration for the scheduler
@@ -271,3 +273,154 @@ struct Hook {
     env: Option<Vec<String>>,
     timeout: Option<usize>,
 }
+
+/// Cgroup resource configuration
+/// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#cgroup-ownership
+#[derive(Deserialize)]
+#[repr(C)]
+struct Resources {
+    memory: Option<Memory>,
+    devices: Option<Vec<AllowedDevice>>,
+    cpu: Option<Cpu>,
+    block_io: Option<BlockIO>,
+    hugepage_limits: Option<Vec<HugePageLimits>>,
+    network: Option<Network>,
+    pids: Option<Pids>,
+    rdma: Option<Rdma>,
+    /// cgroup v2 parameters
+    /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#unified
+    unified: Option<HashMap<String, String>>,
+}
+
+/// cgroup subsystem memory
+/// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#memory
+#[derive(Deserialize)]
+#[repr(C)]
+struct Memory {
+    limit: Option<i64>,
+    reservatiion: Option<i64>,
+    swap: Option<i64>,
+    kernel: Option<i64>,
+    #[serde(rename = "kernelTCP")]
+    kernel_tcp: Option<i64>,
+    swappiness: Option<u64>,
+    #[serde(rename = "disableOOMKiller")]
+    disable_oom_killer: bool,
+    use_hierarchy: bool,
+    check_before_update: bool,
+}
+
+/// cgroup allowed devices
+/// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#allowed-device-list
+#[derive(Deserialize)]
+#[repr(C)]
+struct AllowedDevice {
+    allow: bool,
+    #[serde(rename = "type")]
+    typ: DeviceType,
+    major: i64,
+    minor: i64,
+    access: String,
+}
+
+#[derive(Deserialize)]
+enum DeviceType {
+    #[serde(rename = "a")]
+    All,
+    #[serde(rename = "c")]
+    Char,
+    #[serde(rename = "b")]
+    Block,
+}
+
+/// cgroup subsystems cpu and cpusets
+/// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#cpu
+#[derive(Deserialize)]
+#[repr(C)]
+struct Cpu {
+    shares: Option<i64>,
+    quota: Option<i64>,
+    burst: Option<u64>,
+    period: Option<u64>,
+    realtime_runtime: Option<i64>,
+    realtime_period: Option<u64>,
+    cpus: Option<String>,
+    mems: Option<String>,
+    idle: Option<i64>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[repr(C)]
+struct BlockIO {
+    weight: Option<u16>,
+    leaf_weight: Option<u16>,
+    weight_device: Option<Vec<WeightDevice>>,
+
+    throttle_read_bps_device: Option<Vec<DevThrottle>>,
+    throttle_write_bps_device: Option<Vec<DevThrottle>>,
+
+    throttle_read_iops_device: Option<Vec<DevThrottle>>,
+    throttle_write_iops_device: Option<Vec<DevThrottle>>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[repr(C)]
+struct WeightDevice {
+    major: i64,
+    minor: i64,
+    weight: Option<u16>,
+    leaf_weight: Option<u16>
+}
+
+#[derive(Deserialize)]
+#[repr(C)]
+struct DevThrottle {
+    major: i64,
+    minor: i64,
+    rate: u64,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[repr(C)]
+struct HugePageLimits {
+    page_size: String,
+    limit: u64,
+}
+
+/// cgroup subsystem network
+/// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#network
+#[derive(Deserialize)]
+#[repr(C)]
+struct Network {
+    class_id: Option<u32>,
+    priorities: Option<Vec<Prio>>,
+}
+
+#[derive(Deserialize)]
+#[repr(C)]
+struct Prio {
+    name: String,
+    priority: u32,
+}
+
+/// cgroup subsystem pids
+/// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#pids
+#[derive(Deserialize)]
+#[repr(C)]
+struct Pids {
+    limit: i64,
+}
+
+/// cgroup subsystem rdma
+/// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#rdma
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+#[repr(C)]
+struct Rdma {
+    hca_handles: Option<u32>,
+    hca_objects: Option<u32>,
+}
+
