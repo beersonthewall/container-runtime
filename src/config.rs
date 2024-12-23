@@ -1,6 +1,6 @@
 use crate::error::ContainerErr;
-use serde::{self, Deserialize};
 use log::debug;
+use serde::{self, Deserialize};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
@@ -31,40 +31,40 @@ pub struct Config {
 }
 
 impl Config {
-
     /// Reads config.json from the bundle_path, and parses the json
     pub fn load(bundle_path: &Path) -> Result<Self, ContainerErr> {
-	debug!("loading config.json");
-	// Get path to config.json
-	let mut pb = PathBuf::new();
-	pb.push(bundle_path);
-	pb.push("config.json");
+        debug!("loading config.json");
+        // Get path to config.json
+        let mut pb = PathBuf::new();
+        pb.push(bundle_path);
+        pb.push("config.json");
 
         let mut f = File::open(pb).map_err(|e| ContainerErr::Bundle(e.to_string()))?;
         let mut buf = String::new();
         let _ = f
             .read_to_string(&mut buf)
             .map_err(|e| ContainerErr::Bundle(e.to_string()))?;
-        let config: Self = serde_json::from_str(&buf).map_err(|e| ContainerErr::Bundle(e.to_string()))?;
-	if !config.valid_spec() {
-	    return Err(ContainerErr::Bundle(String::new()))
-	}
+        let config: Self =
+            serde_json::from_str(&buf).map_err(|e| ContainerErr::Bundle(e.to_string()))?;
+        if !config.valid_spec() {
+            return Err(ContainerErr::Bundle(String::new()));
+        }
 
-	debug!("config.json lodaded");
+        debug!("config.json lodaded");
         Ok(config)
     }
 
     pub fn linux_namespaces(&self) -> Option<&[Namespace]> {
-	if let Some(linux) = &self.linux {
-	    Some(&linux.namespaces)
-	} else {
-	    None
-	}
+        if let Some(linux) = &self.linux {
+            Some(&linux.namespaces)
+        } else {
+            None
+        }
     }
 
     fn valid_spec(&self) -> bool {
-	let cwd = Path::new(&self.process.cwd);
-	cwd.is_absolute()
+        let cwd = Path::new(&self.process.cwd);
+        cwd.is_absolute()
     }
 }
 
@@ -371,7 +371,7 @@ struct WeightDevice {
     major: i64,
     minor: i64,
     weight: Option<u16>,
-    leaf_weight: Option<u16>
+    leaf_weight: Option<u16>,
 }
 
 #[derive(Deserialize)]
@@ -423,4 +423,3 @@ struct Rdma {
     hca_handles: Option<u32>,
     hca_objects: Option<u32>,
 }
-

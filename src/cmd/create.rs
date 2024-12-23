@@ -1,7 +1,7 @@
 use crate::config::Config;
-use crate::error::ContainerErr;
 use crate::container::Container;
 use crate::ctx::Ctx;
+use crate::error::ContainerErr;
 use std::path::PathBuf;
 
 /// Creates a new container from the OCI bundle located at bundle_path

@@ -9,8 +9,8 @@ pub struct Ctx {
 
 impl Default for Ctx {
     fn default() -> Self {
-	Self {
-	    root_dir: PathBuf::from(BASE_DIR)
-	}
+        Self {
+            root_dir: PathBuf::from(BASE_DIR),
+        }
     }
 }

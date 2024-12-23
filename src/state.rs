@@ -13,19 +13,19 @@ pub struct State {
     container_id: String,
     status: Status,
     bundle: PathBuf,
-    annotations: HashMap<String, String>
+    annotations: HashMap<String, String>,
 }
 
 impl State {
     pub fn new(container_id: String, bundle: PathBuf, oci_version: String) -> Self {
-	Self {
-	    oci_version,
-	    pid: 0,
-	    container_id,
-	    status: Status::Creating,
-	    bundle,
-	    annotations: HashMap::new(),
-	}
+        Self {
+            oci_version,
+            pid: 0,
+            container_id,
+            status: Status::Creating,
+            bundle,
+            annotations: HashMap::new(),
+        }
     }
 }
 
@@ -44,14 +44,14 @@ enum Status {
 #[cfg(test)]
 mod tests {
     use super::*;
-	
+
     #[test]
     fn test_serde() {
-	let id = String::from("foobar");
-	let bundle = PathBuf::from("/blag/");
-	let version = String::from("1.0.1");
-	let state = State::new(id, bundle, version);
-	assert_eq!("{\"ociVersion\":\"1.0.1\",\"pid\":0,\"id\":\"foobar\",\"status\":\"creating\",\"bundle\":\"/blag/\",\"annotations\":{}}",
+        let id = String::from("foobar");
+        let bundle = PathBuf::from("/blag/");
+        let version = String::from("1.0.1");
+        let state = State::new(id, bundle, version);
+        assert_eq!("{\"ociVersion\":\"1.0.1\",\"pid\":0,\"id\":\"foobar\",\"status\":\"creating\",\"bundle\":\"/blag/\",\"annotations\":{}}",
 		   serde_json::to_string(&state).unwrap());
     }
 }
