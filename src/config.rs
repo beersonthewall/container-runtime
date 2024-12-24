@@ -64,13 +64,13 @@ impl Config {
 
     pub fn cgroup_memory(&self) -> Option<&Memory> {
         if let Some(linux) = &self.linux {
-	    if let Some(resources) = &linux.resources {
-		if let Some(memory) = &resources.memory {
-		    return Some(&memory);
-		}
-	    }
+            if let Some(resources) = &linux.resources {
+                if let Some(memory) = &resources.memory {
+                    return Some(&memory);
+                }
+            }
         }
-	None
+        None
     }
 
     pub fn cgroups_path(&self) -> Option<&str> {

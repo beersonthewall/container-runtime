@@ -23,8 +23,8 @@ impl Container {
     }
 
     pub fn create(&mut self, ctx: &Ctx) -> Result<(), ContainerErr> {
-	// Setup cgroups based on 'resources' config
-	self.resources(ctx)?;
+        // Setup cgroups based on 'resources' config
+        self.resources(ctx)?;
 
         const STACK_SZ: libc::size_t = 1024 * 1024;
         let stack = unsafe { malloc(STACK_SZ) };
@@ -65,9 +65,11 @@ impl Container {
 
     /// Applies cgroup controller settings
     fn resources(&self, ctx: &Ctx) -> Result<(), ContainerErr> {
-        let cgroups_path = resolve_cgroup_path(self.config.cgroups_path(),
-					       ctx.cgroups_root(),
-					       self.state.id());
+        let cgroups_path = resolve_cgroup_path(
+            self.config.cgroups_path(),
+            ctx.cgroups_root(),
+            self.state.id(),
+        );
         // Is the cgroup created?
         if let Err(e) = std::fs::metadata(&cgroups_path) {
             if let ErrorKind::NotFound = e.kind() {
@@ -77,7 +79,7 @@ impl Container {
             }
         }
 
-	Ok(())
+        Ok(())
     }
 }
 
