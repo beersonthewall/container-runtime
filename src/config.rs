@@ -32,7 +32,7 @@ pub struct Config {
 
 impl Config {
     /// Reads config.json from the bundle_path, and parses the json
-    pub fn load(bundle_path: &Path) -> Result<Self, ContainerErr> {
+    pub fn load<P: AsRef<Path>>(bundle_path: P) -> Result<Self, ContainerErr> {
         debug!("loading config.json");
         // Get path to config.json
         let mut pb = PathBuf::new();
@@ -60,6 +60,17 @@ impl Config {
         } else {
             None
         }
+    }
+
+    pub fn cgroup_memory(&self) -> Option<&Memory> {
+        if let Some(linux) = &self.linux {
+	    if let Some(resources) = &linux.resources {
+		if let Some(memory) = &resources.memory {
+		    return Some(&memory);
+		}
+	    }
+        }
+	None
     }
 
     pub fn cgroups_path(&self) -> Option<&str> {
@@ -167,7 +178,7 @@ struct User {
 struct Linux {
     namespaces: Vec<Namespace>,
     uid_mapings: Option<Vec<UidMapping>>,
-    time_offsets: Option<TimeOffsets>,
+    time_offsets: Option<HashMap<String, TimeOffsets>>,
     devices: Option<Vec<Device>>,
     cgroups_path: Option<String>,
     resources: Option<Resources>,
@@ -305,18 +316,18 @@ struct Resources {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#memory
 #[derive(Deserialize)]
 #[repr(C)]
-struct Memory {
-    limit: Option<i64>,
-    reservation: Option<i64>,
-    swap: Option<i64>,
-    kernel: Option<i64>,
+pub struct Memory {
+    pub limit: Option<i64>,
+    pub reservation: Option<i64>,
+    pub swap: Option<i64>,
+    pub kernel: Option<i64>,
     #[serde(rename = "kernelTCP")]
-    kernel_tcp: Option<i64>,
-    swappiness: Option<u64>,
+    pub kernel_tcp: Option<i64>,
+    pub swappiness: Option<u64>,
     #[serde(rename = "disableOOMKiller")]
-    disable_oom_killer: bool,
-    use_hierarchy: bool,
-    check_before_update: bool,
+    pub disable_oom_killer: Option<bool>,
+    pub use_hierarchy: Option<bool>,
+    pub check_before_update: Option<bool>,
 }
 
 /// cgroup allowed devices
@@ -326,10 +337,10 @@ struct Memory {
 struct AllowedDevice {
     allow: bool,
     #[serde(rename = "type")]
-    typ: DeviceType,
-    major: i64,
-    minor: i64,
-    access: String,
+    typ: Option<DeviceType>,
+    major: Option<i64>,
+    minor: Option<i64>,
+    access: Option<String>,
 }
 
 #[derive(Deserialize)]

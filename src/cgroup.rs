@@ -1,13 +1,16 @@
 //! Functions for manipulating cgroups
 //! https://www.kernel.org/doc/Documentation/cgroup-v2.txt
 
-use crate::error::ContainerErr;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 use std::fs::File;
 
+use crate::error::ContainerErr;
+use crate::config::{Config, Memory};
+
 /// Creates a cgroup at the provided path.
 /// Assumes this directory does not exist and will Err if it does.
-pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P) -> Result<(), ContainerErr> {
+pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<(), ContainerErr> {
     std::fs::create_dir(&cgroup_path).map_err(|e| ContainerErr::IO(e))?;
 
     // create the necessary files
@@ -20,6 +23,9 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P) -> Result<(), ContainerErr>
     }
 
     // TODO: apply settings from config
+    if let Some(memory) = config.cgroup_memory() {
+	set_cgroup_memory(cgroup_path, memory)?;
+    }
 
     Ok(())
 }
@@ -55,6 +61,46 @@ pub fn resolve_cgroup_path<P: AsRef<Path>>(config_cgroups_path: Option<P>,
     }
 }
 
+/// Write values from cgroup memory config into the appropriate files
+fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), ContainerErr> {
+    if let Some(val) = memory.limit {
+	write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.limit")?;
+    }
+
+    if let Some(val) = memory.reservation {
+	write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.soft_limit_in_bytes")?;
+    }
+
+    if let Some(val) = memory.swap {
+	write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.swap.max")?;
+    }
+
+    if let Some(val) = memory.swappiness {
+	write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.swappiness")?;
+    }
+
+    if let Some(val) = memory.disable_oom_killer {
+	let toggle = if val { b"1" } else { b"0" };
+	write_to_cgroup_file(toggle, &cgroup, "memory.oom_control")?;
+    }
+
+    if let Some(val) = memory.use_hierarchy {
+	let toggle = if val { b"1" } else { b"0" };
+	write_to_cgroup_file(toggle, &cgroup, "memory.use_hierarchy")?;
+    }
+
+    Ok(())
+}
+
+fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(bytes: &[u8],
+					cgroup: P,
+					filepath: F) -> Result<(), ContainerErr> {
+    let mut f = File::create(Path::new(cgroup.as_ref()).join(filepath))
+	.map_err(|e| ContainerErr::IO(e))?;
+    f.write(bytes).map_err(|e| ContainerErr::IO(e))?;
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -85,7 +131,9 @@ mod tests {
 	let mut procs_file = PathBuf::from(&dir);
 	procs_file.push("cgroup.procs");
 
-	let result = create_cgroup(&dir);
+	let config = Config::load("test_configs/").expect("to load full_config_example.json");
+
+	let result = create_cgroup(&dir, &config);
 	assert!(result.is_ok(), "{:?}", result);
 	let metadata = metadata(&procs_file);
 	if let Err(e) = metadata {
@@ -94,7 +142,6 @@ mod tests {
 	}
 
 	// try to cleanup
-	std::fs::remove_file(&procs_file).unwrap();
-	std::fs::remove_dir(&dir).unwrap();
+	std::fs::remove_dir_all(&dir).unwrap();
     }
 }

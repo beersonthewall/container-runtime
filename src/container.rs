@@ -71,7 +71,7 @@ impl Container {
         // Is the cgroup created?
         if let Err(e) = std::fs::metadata(&cgroups_path) {
             if let ErrorKind::NotFound = e.kind() {
-                create_cgroup(&cgroups_path)?;
+                create_cgroup(&cgroups_path, &self.config)?;
             } else {
                 return Err(ContainerErr::IO(e));
             }
