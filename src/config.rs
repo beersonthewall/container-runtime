@@ -383,16 +383,16 @@ pub struct Cpu {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
-struct BlockIO {
-    weight: Option<u16>,
-    leaf_weight: Option<u16>,
-    weight_device: Option<Vec<WeightDevice>>,
+pub struct BlockIO {
+    pub weight: Option<u16>,
+    pub leaf_weight: Option<u16>,
+    pub weight_device: Option<Vec<WeightDevice>>,
 
-    throttle_read_bps_device: Option<Vec<DevThrottle>>,
-    throttle_write_bps_device: Option<Vec<DevThrottle>>,
+    pub throttle_read_bps_device: Option<Vec<DevThrottle>>,
+    pub throttle_write_bps_device: Option<Vec<DevThrottle>>,
 
-    throttle_read_iops_device: Option<Vec<DevThrottle>>,
-    throttle_write_iops_device: Option<Vec<DevThrottle>>,
+    pub throttle_read_iops_device: Option<Vec<DevThrottle>>,
+    pub throttle_write_iops_device: Option<Vec<DevThrottle>>,
 }
 
 #[derive(Deserialize)]

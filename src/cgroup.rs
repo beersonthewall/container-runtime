@@ -12,6 +12,7 @@ use libc::{
 };
 
 use crate::config::{
+    BlockIO,
     Config,
     Cpu,
     Memory
@@ -146,6 +147,11 @@ fn set_cgroup_cpu<P: AsRef<Path>>(cgroup: P, cpu: &Cpu) -> Result<(), ContainerE
     }
     Ok(())
 }
+
+fn set_cgroup_blockio<P: AsRef<Path>>(cgroup: P, blockio: BlockIO) -> Result<(), ContainerErr> {
+    Ok(())
+}
+
 fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(
     bytes: &[u8],
     cgroup: P,
