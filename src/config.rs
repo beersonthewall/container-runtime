@@ -72,6 +72,17 @@ impl Config {
         }
         None
     }
+    
+    pub fn cgroup_cpu(&self) -> Option<&Cpu> {
+        if let Some(linux) = &self.linux {
+            if let Some(resources) = &linux.resources {
+                if let Some(cpu) = &resources.cpu {
+                    return Some(&cpu);
+                }
+            }
+        }
+        None	
+    }
 
     pub fn cgroups_path(&self) -> Option<&str> {
         if let Some(linux) = &self.linux {
@@ -357,16 +368,16 @@ enum DeviceType {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#cpu
 #[derive(Deserialize)]
 #[repr(C)]
-struct Cpu {
-    shares: Option<i64>,
-    quota: Option<i64>,
-    burst: Option<u64>,
-    period: Option<u64>,
-    realtime_runtime: Option<i64>,
-    realtime_period: Option<u64>,
-    cpus: Option<String>,
-    mems: Option<String>,
-    idle: Option<i64>,
+pub struct Cpu {
+    pub shares: Option<i64>,
+    pub quota: Option<i64>,
+    pub burst: Option<u64>,
+    pub period: Option<u64>,
+    pub realtime_runtime: Option<i64>,
+    pub realtime_period: Option<u64>,
+    pub cpus: Option<String>,
+    pub mems: Option<String>,
+    pub idle: Option<i64>,
 }
 
 #[derive(Deserialize)]

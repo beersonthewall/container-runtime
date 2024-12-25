@@ -2,16 +2,20 @@
 //! https://www.kernel.org/doc/Documentation/cgroup-v2.txt
 
 use std::fs::File;
-use std::io::Write;
+use std::io::{Read, Write};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
-use crate::config::{Config, Memory};
 use libc::{
     statfs,
     c_char,
 };
 
+use crate::config::{
+    Config,
+    Cpu,
+    Memory
+};
 use crate::error::ContainerErr;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -53,7 +57,11 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<
 
     // TODO: apply settings from config
     if let Some(memory) = config.cgroup_memory() {
-        set_cgroup_memory(cgroup_path, memory)?;
+        set_cgroup_memory(&cgroup_path, memory)?;
+    }
+
+    if let Some(cpu) = config.cgroup_cpu() {
+	set_cgroup_cpu(&cgroup_path, cpu)?;
     }
 
     Ok(())
@@ -94,10 +102,15 @@ pub fn resolve_cgroup_path<P: AsRef<Path>>(
 
 /// Write values from cgroup memory config into the appropriate files
 fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), ContainerErr> {
+    let mut current = String::new();
+    //File::read_to_string("memory.current", &current).map_err(|e| ContainerErr::IO(e))?;
+
     if let Some(val) = memory.limit {
         write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.limit")?;
     }
 
+    // FIXME: is this memory.low for cgroups v2? Which is the version I'm coding against
+    // accidentally read v1 docs for filenames.... oops
     if let Some(val) = memory.reservation {
         write_to_cgroup_file(
             val.to_string().as_bytes(),
@@ -127,6 +140,12 @@ fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), C
     Ok(())
 }
 
+fn set_cgroup_cpu<P: AsRef<Path>>(cgroup: P, cpu: &Cpu) -> Result<(), ContainerErr> {
+    if let Some(val) = cpu.burst {
+	write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "cpu.max.burst")?;
+    }
+    Ok(())
+}
 fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(
     bytes: &[u8],
     cgroup: P,
@@ -136,6 +155,13 @@ fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(
         File::create(Path::new(cgroup.as_ref()).join(filepath)).map_err(|e| ContainerErr::IO(e))?;
     f.write(bytes).map_err(|e| ContainerErr::IO(e))?;
     Ok(())
+}
+
+fn read_from_cgroup_file<P: AsRef<Path>>(file: P) -> Result<String, ContainerErr> {
+    let mut f = File::open(file).map_err(|e| ContainerErr::IO(e))?;
+    let mut s = String::new();
+    f.read_to_string(&mut s).map_err(|e| ContainerErr::IO(e))?;
+    Ok(s)
 }
 
 #[cfg(test)]
