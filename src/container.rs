@@ -1,3 +1,5 @@
+use crate::cgroup;
+
 use super::cgroup::{create_cgroup, resolve_cgroup_path};
 use super::config::Config;
 use super::ctx::Ctx;
@@ -23,6 +25,9 @@ impl Container {
     }
 
     pub fn create(&mut self, ctx: &Ctx) -> Result<(), ContainerErr> {
+	// Check for cgroup version. Returns err if V1 or Hybrid
+	cgroup::detect_cgroup_version(ctx.cgroups_root())?;
+
         // Setup cgroups based on 'resources' config
         self.resources(ctx)?;
 

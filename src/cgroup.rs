@@ -3,10 +3,39 @@
 
 use std::fs::File;
 use std::io::Write;
+use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 use crate::config::{Config, Memory};
+use libc::{
+    statfs,
+    c_char,
+};
+
 use crate::error::ContainerErr;
+
+#[derive(Debug, Eq, PartialEq)]
+pub enum CgroupVersion {
+    V1,
+    V2,
+    Hybrid,
+}
+
+/// Attempts to detect which cgroup version is being used
+pub fn detect_cgroup_version<P: AsRef<Path>>(mount_point: P) -> Result<CgroupVersion, ContainerErr> {
+    let mount_point = mount_point.as_ref().as_os_str().as_bytes().to_vec();
+    let mut statfs = unsafe { std::mem::zeroed::<statfs>() };
+    let err = unsafe { libc::statfs(mount_point.as_ptr() as *const c_char, &mut statfs) };
+    if err < 0 {
+	return Err(ContainerErr::Cgroup(String::from("Cgroup mount at /sys/fs/cgroup not found.")));
+    }
+
+    match statfs.f_type {
+	libc::CGROUP2_SUPER_MAGIC => Ok(CgroupVersion::V2),
+	libc::CGROUP_SUPER_MAGIC => Err(ContainerErr::Cgroup(String::from("Cgroup v1 or hybrid not supported"))),
+	_ => Err(ContainerErr::Cgroup(String::from("/sys/fs/cgroup mount has an unsupported f_type")))
+    }
+}
 
 /// Creates a cgroup at the provided path.
 /// Assumes this directory does not exist and will Err if it does.

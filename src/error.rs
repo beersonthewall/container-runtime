@@ -4,6 +4,7 @@ pub enum ContainerErr {
     Bundle(String),
     Child(String),
     IO(std::io::Error),
+    Cgroup(String),
 }
 
 impl ContainerErr {
