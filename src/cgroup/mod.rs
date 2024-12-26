@@ -1,6 +1,8 @@
 //! Functions for manipulating cgroups
 //! https://www.kernel.org/doc/Documentation/cgroup-v2.txt
 
+mod util;
+
 use std::fs::File;
 use std::io::{Read, Write};
 use std::os::unix::ffi::OsStrExt;
