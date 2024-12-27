@@ -81,7 +81,18 @@ impl Config {
                 }
             }
         }
-        None	
+        None
+    }
+
+    pub fn blockio(&self) -> Option<&BlockIO> {
+        if let Some(linux) = &self.linux {
+            if let Some(resources) = &linux.resources {
+                if let Some(block_io) = &resources.block_io {
+                    return Some(&block_io);
+                }
+            }
+        }
+        None
     }
 
     pub fn cgroups_path(&self) -> Option<&str> {
@@ -398,19 +409,19 @@ pub struct BlockIO {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
-struct WeightDevice {
-    major: i64,
-    minor: i64,
-    weight: Option<u16>,
-    leaf_weight: Option<u16>,
+pub struct WeightDevice {
+    pub major: i64,
+    pub minor: i64,
+    pub weight: Option<u16>,
+    pub leaf_weight: Option<u16>,
 }
 
 #[derive(Deserialize)]
 #[repr(C)]
-struct DevThrottle {
-    major: i64,
-    minor: i64,
-    rate: u64,
+pub struct DevThrottle {
+    pub major: i64,
+    pub minor: i64,
+    pub rate: u64,
 }
 
 #[derive(Deserialize)]

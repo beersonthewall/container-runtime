@@ -3,6 +3,7 @@
 
 mod util;
 
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::os::unix::ffi::OsStrExt;
@@ -12,12 +13,10 @@ use libc::{
     statfs,
     c_char,
 };
+use util::{read_flat_keyed_file, read_nested_keyed_file, write_nested_keyed_file};
 
 use crate::config::{
-    BlockIO,
-    Config,
-    Cpu,
-    Memory
+    BlockIO, Config, Cpu, DevThrottle, Memory
 };
 use crate::error::ContainerErr;
 
@@ -58,13 +57,16 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<
         let _ = File::create(pb).map_err(|e| ContainerErr::IO(e))?;
     }
 
-    // TODO: apply settings from config
     if let Some(memory) = config.cgroup_memory() {
         set_cgroup_memory(&cgroup_path, memory)?;
     }
 
     if let Some(cpu) = config.cgroup_cpu() {
 	set_cgroup_cpu(&cgroup_path, cpu)?;
+    }
+
+    if let Some(blockio) = config.blockio() {
+	set_cgroup_blockio(&cgroup_path, blockio)?;
     }
 
     Ok(())
@@ -150,8 +152,58 @@ fn set_cgroup_cpu<P: AsRef<Path>>(cgroup: P, cpu: &Cpu) -> Result<(), ContainerE
     Ok(())
 }
 
-fn set_cgroup_blockio<P: AsRef<Path>>(cgroup: P, blockio: BlockIO) -> Result<(), ContainerErr> {
+fn set_cgroup_blockio<P: AsRef<Path>>(cgroup: P, blockio: &BlockIO) -> Result<(), ContainerErr> {
+    if let Some(weight) = blockio.weight {
+	let io_weight_path = cgroup.as_ref().join("io.weight");
+	let mut data = read_flat_keyed_file(&io_weight_path)?;
+
+	if let Some(weight_devices) = &blockio.weight_device {
+	    for device in weight_devices {
+		if let Some(device_weight) = device.weight {
+		    let key = format!("{}:{}", device.major, device.minor);
+		    data.insert(key, device_weight.to_string());
+		}
+	    }
+	}
+
+	data.insert(String::from("default"), weight.to_string());
+	util::write_flat_keyed_file(&io_weight_path, data)?;
+    }
+
+    let io_max_path = cgroup.as_ref().join("io.max");
+    let mut io_max = read_nested_keyed_file(&io_max_path)?;
+
+    if let Some(throttle_read_bps_device) = &blockio.throttle_read_bps_device {
+	update_device(throttle_read_bps_device, "rbps", &mut io_max);
+    }
+
+    if let Some(throttle_write_bps_device) = &blockio.throttle_write_bps_device {
+	update_device(throttle_write_bps_device, "wbps", &mut io_max);
+    }
+
+    if let Some(throttle_read_iops_device) = &blockio.throttle_read_iops_device {
+	update_device(throttle_read_iops_device, "riops", &mut io_max);
+    }
+
+    if let Some(throttle_write_iops_device) = &blockio.throttle_write_iops_device {
+	update_device(throttle_write_iops_device, "wiops", &mut io_max);
+    }
+
+    write_nested_keyed_file(&io_max_path, io_max)?;
+
     Ok(())
+}
+
+fn update_device(dev_list: &[DevThrottle], subkey: &str, file_map: &mut HashMap<String, HashMap<String, String>>) {
+    for dev in dev_list {
+	if let Some(dev_entry) = file_map.get_mut(&format!("{}:{}", dev.major, dev.minor)) {
+	    dev_entry.insert(String::from("rbps"), dev.rate.to_string());
+	} else {
+	    let mut dev_entry = HashMap::new();
+	    dev_entry.insert(String::from(subkey), dev.rate.to_string());
+	    file_map.insert(format!("{}:{}", dev.major, dev.minor), dev_entry);
+	}
+    }
 }
 
 fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(

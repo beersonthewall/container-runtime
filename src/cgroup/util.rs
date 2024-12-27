@@ -2,7 +2,10 @@
 //! Cgroup v2 reference: https://www.kernel.org/doc/Documentation/cgroup-v2.txt
 
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{
+    File,
+    OpenOptions,
+};
 use std::io::{
     prelude::*,
     BufReader,
@@ -27,7 +30,7 @@ pub fn read_flat_keyed_file<P: AsRef<Path>>(path: P) -> Result<HashMap<String, S
     let mut data = HashMap::new();
 
     for line in buf.split("\n") {
-	let parts: Vec<&str> = line.split("=").collect();
+	let parts: Vec<&str> = line.split(" ").collect();
 	if parts.len() == 2 {
 	    data.insert(String::from(parts[0]), String::from(parts[1]));
 	}
@@ -111,6 +114,47 @@ pub fn read_nested_keyed_file<P: AsRef<Path>>(path: P) -> Result<HashMap<String,
     }
 
     Ok(data)
+}
+
+/// Writes to a cgroup interface file with a nested keyed format.
+pub fn write_nested_keyed_file<P: AsRef<Path>>(path: P, data: HashMap<String, HashMap<String, String>>) -> Result<(), ContainerErr> {
+    let mut s = String::new();
+    for (k, v) in data.iter() {
+	s += k;
+	s += " ";
+	for (sk, sv) in v.iter() {
+	    let pair = format!("{}={} ", &sk, &sv);
+	    s += &pair;
+	}
+	s.remove(s.len() - 1);
+    }
+
+    let mut f = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(path)
+	.map_err(|e| ContainerErr::IO(e))?;
+    f.write_all(s.as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+    Ok(())
+}
+
+/// Write to a cgroup interface file with a flat keyed format.
+pub fn write_flat_keyed_file<P: AsRef<Path>>(path: P, data: HashMap<String, String>) -> Result<(), ContainerErr> {
+    let mut s = String::new();
+    for (k,v) in data.iter() {
+	s += k;
+	s += " ";
+	s += v;
+	s += "\n";
+    }
+
+    let mut f = OpenOptions::new()
+        .write(true)
+        .truncate(true)
+        .open(path)
+	.map_err(|e| ContainerErr::IO(e))?;
+    f.write_all(s.as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+    Ok(())
 }
 
 #[cfg(test)]
@@ -206,7 +250,7 @@ mod tests {
         let path = format!("/tmp/read_flat_keyed_{}", time);
 
 	{
-	    let data = b"KEY0=VAL0\nKEY1=VAL1\n";
+	    let data = b"KEY0 VAL0\nKEY1 VAL1\n";
 	    let mut tmp = File::create(&path).unwrap();
 	    tmp.write_all(data).unwrap();
 	}
@@ -215,6 +259,34 @@ mod tests {
 	let mut expected = HashMap::new();
 	expected.insert(String::from("KEY0"), String::from("VAL0"));
 	expected.insert(String::from("KEY1"), String::from("VAL1"));
+
+	// Cleanup file
+	std::fs::remove_file(&path).unwrap();
+	assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn test_write_flat_keyed_file() {
+	let time = SystemTime::now()
+	    .duration_since(UNIX_EPOCH)
+	    .unwrap()
+	    .as_millis();
+        let path = format!("/tmp/read_flat_keyed_{}", time);
+	{
+	    let data = b"KEY20=VAL20\n";
+	    let mut tmp = File::create(&path).unwrap();
+	    tmp.write_all(data).unwrap();
+	    tmp.flush().unwrap();
+	    drop(tmp);
+	}
+
+	let mut data = HashMap::new();
+	data.insert(String::from("KEY0"), String::from("VAL0"));
+	data.insert(String::from("KEY1"), String::from("VAL1"));
+
+	let expected = data.clone();
+	write_flat_keyed_file(&path, data).unwrap();
+	let actual = read_flat_keyed_file(&path).unwrap();
 
 	// Cleanup file
 	std::fs::remove_file(&path).unwrap();
