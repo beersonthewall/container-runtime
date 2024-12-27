@@ -10,12 +10,13 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 use libc::{
-    c_char, statfs, CTRL_CMD_DELMCAST_GRP
+    c_char,
+    statfs,
 };
 use util::{read_flat_keyed_file, read_nested_keyed_file, write_nested_keyed_file};
 
 use crate::config::{
-    BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory, Rdma
+    BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory, Pids, Rdma
 };
 use crate::error::ContainerErr;
 
@@ -76,6 +77,9 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<
 	set_cgroup_rdma(&cgroup_path, rdma)?;
     }
 
+    if let Some(pids) = config.pids() {
+	set_cgroup_pids(&cgroup_path, pids)?;
+    }
     Ok(())
 }
 
@@ -223,6 +227,7 @@ fn set_cgroup_hugepage<P: AsRef<Path>>(cgroup: P, limits: &[HugePageLimits]) -> 
 	let mut f = OpenOptions::new()
 	    .create(true)
 	    .truncate(true)
+	    .write(true)
 	    .open(hp_path)
 	    .map_err(|e| ContainerErr::IO(e))?;
 	f.write_all(hp.limit.to_string().as_bytes()).map_err(|e| ContainerErr::IO(e))?;
@@ -230,6 +235,7 @@ fn set_cgroup_hugepage<P: AsRef<Path>>(cgroup: P, limits: &[HugePageLimits]) -> 
     Ok(())
 }
 
+/// https://docs.kernel.org/admin-guide/cgroup-v2.html#rdma
 fn set_cgroup_rdma<P: AsRef<Path>>(cgroup: P, rdma: std::collections::hash_map::Iter<String, Rdma>) -> Result<(), ContainerErr> {
     let mut rdma_data = read_nested_keyed_file(cgroup.as_ref().join("rdma.max"))?;
     for (key, rdma_cfg) in rdma {
@@ -248,6 +254,21 @@ fn set_cgroup_rdma<P: AsRef<Path>>(cgroup: P, rdma: std::collections::hash_map::
 	    sub_map.insert(String::from("hca_object"), o.to_string());
 	}
     }
+    Ok(())
+}
+
+/// Writes max pids
+/// https://docs.kernel.org/admin-guide/cgroup-v2.html#pid
+fn set_cgroup_pids<P: AsRef<Path>>(cgroup: P, pids: &Pids) -> Result<(), ContainerErr> {
+    let mut f = OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(cgroup.as_ref().join("pids.max"))
+        .map_err(|e| ContainerErr::IO(e))?;
+
+    f.write_all(pids.limit.to_string().as_bytes())
+	.map_err(|e| ContainerErr::IO(e))?;
     Ok(())
 }
 

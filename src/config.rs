@@ -117,6 +117,17 @@ impl Config {
         None
     }
 
+    pub fn pids(&self) -> Option<&Pids> {
+        if let Some(linux) = &self.linux {
+            if let Some(resources) = &linux.resources {
+                if let Some(p) = &resources.pids {
+                    return Some(&p);
+                }
+            }
+        }
+        None
+    }
+
     pub fn cgroups_path(&self) -> Option<&str> {
         if let Some(linux) = &self.linux {
             if let Some(path) = &linux.cgroups_path {
@@ -474,8 +485,8 @@ struct Prio {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#pids
 #[derive(Deserialize)]
 #[repr(C)]
-struct Pids {
-    limit: i64,
+pub struct Pids {
+    pub limit: i64,
 }
 
 /// cgroup subsystem rdma
