@@ -106,6 +106,17 @@ impl Config {
         None
     }
 
+    pub fn rdma(&self) -> Option<std::collections::hash_map::Iter<'_, String, Rdma>> {
+        if let Some(linux) = &self.linux {
+            if let Some(resources) = &linux.resources {
+                if let Some(rdma) = &resources.rdma {
+                    return Some(rdma.iter());
+                }
+            }
+        }
+        None
+    }
+
     pub fn cgroups_path(&self) -> Option<&str> {
         if let Some(linux) = &self.linux {
             if let Some(path) = &linux.cgroups_path {
@@ -339,7 +350,7 @@ struct Resources {
     hugepage_limits: Option<Vec<HugePageLimits>>,
     network: Option<Network>,
     pids: Option<Pids>,
-    rdma: Option<Rdma>,
+    rdma: Option<HashMap<String, Rdma>>,
     /// cgroup v2 parameters
     /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#unified
     unified: Option<HashMap<String, String>>,
@@ -472,7 +483,7 @@ struct Pids {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
-struct Rdma {
-    hca_handles: Option<u32>,
-    hca_objects: Option<u32>,
+pub struct Rdma {
+    pub hca_handles: Option<u32>,
+    pub hca_objects: Option<u32>,
 }

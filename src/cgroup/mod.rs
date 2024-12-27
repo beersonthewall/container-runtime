@@ -10,13 +10,12 @@ use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
 use libc::{
-    statfs,
-    c_char,
+    c_char, statfs, CTRL_CMD_DELMCAST_GRP
 };
 use util::{read_flat_keyed_file, read_nested_keyed_file, write_nested_keyed_file};
 
 use crate::config::{
-    BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory
+    BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory, Rdma
 };
 use crate::error::ContainerErr;
 
@@ -71,6 +70,10 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<
 
     if let Some(hpl) = config.hugepage_limits() {
 	set_cgroup_hugepage(&cgroup_path, hpl)?;
+    }
+
+    if let Some(rdma) = config.rdma() {
+	set_cgroup_rdma(&cgroup_path, rdma)?;
     }
 
     Ok(())
@@ -223,6 +226,27 @@ fn set_cgroup_hugepage<P: AsRef<Path>>(cgroup: P, limits: &[HugePageLimits]) -> 
 	    .open(hp_path)
 	    .map_err(|e| ContainerErr::IO(e))?;
 	f.write_all(hp.limit.to_string().as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+    }
+    Ok(())
+}
+
+fn set_cgroup_rdma<P: AsRef<Path>>(cgroup: P, rdma: std::collections::hash_map::Iter<String, Rdma>) -> Result<(), ContainerErr> {
+    let mut rdma_data = read_nested_keyed_file(cgroup.as_ref().join("rdma.max"))?;
+    for (key, rdma_cfg) in rdma {
+	let sub_map = if let Some(sub_map) = rdma_data.get_mut(key) {
+	    sub_map
+	} else {
+	    let sub_map = HashMap::new();
+	    rdma_data.insert(key.clone(), sub_map);
+	    rdma_data.get_mut(key).unwrap()
+	};
+
+	if let Some(h) = rdma_cfg.hca_handles {
+	    sub_map.insert(String::from("hca_handle"), h.to_string());
+	}
+	if let Some(o) = rdma_cfg.hca_objects {
+	    sub_map.insert(String::from("hca_object"), o.to_string());
+	}
     }
     Ok(())
 }
