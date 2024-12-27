@@ -4,7 +4,7 @@
 mod util;
 
 use std::collections::HashMap;
-use std::fs::File;
+use std::fs::{File, OpenOptions};
 use std::io::{Read, Write};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
@@ -16,7 +16,7 @@ use libc::{
 use util::{read_flat_keyed_file, read_nested_keyed_file, write_nested_keyed_file};
 
 use crate::config::{
-    BlockIO, Config, Cpu, DevThrottle, Memory
+    BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory
 };
 use crate::error::ContainerErr;
 
@@ -67,6 +67,10 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<
 
     if let Some(blockio) = config.blockio() {
 	set_cgroup_blockio(&cgroup_path, blockio)?;
+    }
+
+    if let Some(hpl) = config.hugepage_limits() {
+	set_cgroup_hugepage(&cgroup_path, hpl)?;
     }
 
     Ok(())
@@ -152,6 +156,8 @@ fn set_cgroup_cpu<P: AsRef<Path>>(cgroup: P, cpu: &Cpu) -> Result<(), ContainerE
     Ok(())
 }
 
+/// Writes information for the IO controller
+/// https://docs.kernel.org/admin-guide/cgroup-v2.html#io
 fn set_cgroup_blockio<P: AsRef<Path>>(cgroup: P, blockio: &BlockIO) -> Result<(), ContainerErr> {
     if let Some(weight) = blockio.weight {
 	let io_weight_path = cgroup.as_ref().join("io.weight");
@@ -204,6 +210,21 @@ fn update_device(dev_list: &[DevThrottle], subkey: &str, file_map: &mut HashMap<
 	    file_map.insert(format!("{}:{}", dev.major, dev.minor), dev_entry);
 	}
     }
+}
+
+/// Writes information for the hugetlb controller
+/// https://docs.kernel.org/admin-guide/cgroup-v2.html#hugetlb
+fn set_cgroup_hugepage<P: AsRef<Path>>(cgroup: P, limits: &[HugePageLimits]) -> Result<(), ContainerErr> {
+    for hp in limits {
+	let hp_path = cgroup.as_ref().join(format!("hugepage.{}.max", hp.page_size));
+	let mut f = OpenOptions::new()
+	    .create(true)
+	    .truncate(true)
+	    .open(hp_path)
+	    .map_err(|e| ContainerErr::IO(e))?;
+	f.write_all(hp.limit.to_string().as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+    }
+    Ok(())
 }
 
 fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(

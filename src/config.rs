@@ -95,6 +95,17 @@ impl Config {
         None
     }
 
+    pub fn hugepage_limits(&self) -> Option<&[HugePageLimits]> {
+        if let Some(linux) = &self.linux {
+            if let Some(resources) = &linux.resources {
+                if let Some(hpl) = &resources.hugepage_limits {
+                    return Some(&hpl);
+                }
+            }
+        }
+        None
+    }
+
     pub fn cgroups_path(&self) -> Option<&str> {
         if let Some(linux) = &self.linux {
             if let Some(path) = &linux.cgroups_path {
@@ -427,9 +438,9 @@ pub struct DevThrottle {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
-struct HugePageLimits {
-    page_size: String,
-    limit: u64,
+pub struct HugePageLimits {
+    pub page_size: String,
+    pub limit: u64,
 }
 
 /// cgroup subsystem network
