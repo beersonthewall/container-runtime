@@ -283,13 +283,6 @@ fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(
     Ok(())
 }
 
-fn read_from_cgroup_file<P: AsRef<Path>>(file: P) -> Result<String, ContainerErr> {
-    let mut f = File::open(file).map_err(|e| ContainerErr::IO(e))?;
-    let mut s = String::new();
-    f.read_to_string(&mut s).map_err(|e| ContainerErr::IO(e))?;
-    Ok(s)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
