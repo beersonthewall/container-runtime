@@ -1,7 +1,6 @@
 # A container runtime
 
-Sorta like the generic brands that are just named 'bread', but for containers.
-
+Learning how 2 container.
 
 ## Testing
 The steps:
