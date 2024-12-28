@@ -39,7 +39,7 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
     let fifo_path = ctx.state_dir.join(&container_id).join("exec_fifo");
     fifo(&fifo_path)?;
 
-    start_container(fifo_path, rdy_pipe_read_fd, rdy_pipe_write_fd)?;
+    start_container(fifo_path, rdy_pipe_read_fd, rdy_pipe_write_fd, c)?;
 
     Ok(())
 }
@@ -87,10 +87,12 @@ fn start_container(
     fifo_path: PathBuf,
     rdy_pipe_read_fd: c_int,
     rdy_pipe_write_fd: c_int,
+    container: Container,
 ) -> Result<(), ContainerErr> {
     let mut init_args = InitArgs {
         fifo_path: fifo_path.clone(),
         rdy_pipe_write_fd,
+	container,
     };
     let args_ptr: *mut InitArgs = &mut init_args;
 

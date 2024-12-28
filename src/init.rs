@@ -1,20 +1,20 @@
-use libc::{__errno_location, c_int, c_void, write, EINTR};
 use std::fs::{
     File,
     OpenOptions
 };
-use std::io::{
-    Read,
-    Write
-};
+use std::io::prelude::*;
 use std::time::UNIX_EPOCH;
 use std::{path::{Path, PathBuf}, time::SystemTime};
 
+use libc::{__errno_location, c_int, c_void, write, EINTR};
+
+use crate::container::Container;
+
 /// Init arguments
-#[repr(C)]
 pub struct InitArgs {
     pub fifo_path: PathBuf,
     pub rdy_pipe_write_fd: c_int,
+    pub container: Container,
 }
 
 /// First thing that runs in a new container process.
