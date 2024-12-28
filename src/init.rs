@@ -1,6 +1,12 @@
 use libc::{__errno_location, c_int, c_void, write, EINTR};
-use std::fs::OpenOptions;
-use std::io::{Read, Write};
+use std::fs::{
+    File,
+    OpenOptions
+};
+use std::io::{
+    Read,
+    Write
+};
 use std::time::UNIX_EPOCH;
 use std::{path::PathBuf, time::SystemTime};
 
@@ -28,25 +34,7 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
     let args = unsafe { args.as_mut().unwrap() };
 
     // Write exit code to pipe for parent process
-    let ret: c_int = 0;
-    let ret_ptr: *const c_int = &ret;
-    if args.rdy_pipe_write_fd > 0 {
-        unsafe {
-            log_file.write_all(b"writing to ready pipe..\n").unwrap();
-            log_file.flush().unwrap();
-
-            while write(
-                args.rdy_pipe_write_fd,
-                ret_ptr as *const c_void,
-                size_of_val(&ret),
-            ) == -1
-                && *__errno_location() == EINTR
-            {
-                log_file.write_all(b"retrying rdy notif\n").unwrap();
-                log_file.flush().unwrap();
-            }
-        }
-    }
+    notify_container_ready(args.rdy_pipe_write_fd, &mut log_file);
 
     // Wait for FIFO to be opened. Then we can exec, at this moment we don't care what's
     // sent. Opening the fifo is the signal.
@@ -63,5 +51,27 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
         .write_all(b"container successfully created\n")
         .unwrap();
 
-    ret
+    0
+}
+
+fn notify_container_ready(fd: c_int, log_file: &mut File) {
+    let ret: c_int = 0;
+    let ret_ptr: *const c_int = &ret;
+    if fd > 0 {
+        unsafe {
+            log_file.write_all(b"writing to ready pipe..\n").unwrap();
+            log_file.flush().unwrap();
+
+            while write(
+                fd,
+                ret_ptr as *const c_void,
+                size_of_val(&ret),
+            ) == -1
+                && *__errno_location() == EINTR
+            {
+                log_file.write_all(b"retrying rdy notif\n").unwrap();
+                log_file.flush().unwrap();
+            }
+        }
+    }
 }
