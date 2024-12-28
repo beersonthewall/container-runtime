@@ -46,4 +46,8 @@ impl Container {
     pub fn exists(&self, ctx: &Ctx) -> bool {
         fs::metadata(ctx.state_path_for(&self.state.id())).is_ok()
     }
+
+    pub fn config(&self) -> &Config {
+        &self.config
+    }
 }

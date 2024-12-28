@@ -9,6 +9,7 @@ pub enum ContainerErr {
     Pipe(String),
     Fifo(&'static str),
     Init(&'static str),
+    Rlimit(String),
 }
 
 impl ContainerErr {

@@ -181,7 +181,7 @@ pub struct Process {
     user: User,
 
     // POSIX process fields
-    rlimits: Option<Vec<RLimit>>,
+    pub rlimits: Option<Vec<RLimit>>,
 
     // Linux process fields
     pub apparmor_profile: Option<String>,
@@ -200,11 +200,11 @@ pub struct Process {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-process
 #[derive(Deserialize)]
 #[repr(C)]
-struct RLimit {
+pub struct RLimit {
     #[serde(rename = "type")]
-    typ: String,
-    soft: u64,
-    hard: u64,
+    pub typ: String,
+    pub soft: u64,
+    pub hard: u64,
 }
 
 /// Console Size configuration

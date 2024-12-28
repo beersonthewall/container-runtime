@@ -5,7 +5,10 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use libc::{__errno_location, c_int, clone, malloc, mkfifo, pipe2, read, size_t, CLONE_NEWCGROUP, EINTR, O_CLOEXEC, SIGCHLD};
+use libc::{
+    __errno_location, c_int, clone, malloc, mkfifo, pipe2, read, size_t, CLONE_NEWCGROUP, EINTR,
+    O_CLOEXEC, SIGCHLD,
+};
 use log::debug;
 
 use crate::config::Config;
@@ -92,7 +95,7 @@ fn init_container_proc(
     let mut init_args = InitArgs {
         fifo_path: fifo_path.clone(),
         rdy_pipe_write_fd,
-	container,
+        container,
     };
     let args_ptr: *mut InitArgs = &mut init_args;
 
@@ -107,8 +110,11 @@ fn init_container_proc(
 
     if child_pid == -1 {
         debug!("clone failed, exiting.");
-	let errno = unsafe {*__errno_location()};
-	return Err(ContainerErr::Child(format!("failed to clone child process, errno: {}", errno)));
+        let errno = unsafe { *__errno_location() };
+        return Err(ContainerErr::Child(format!(
+            "failed to clone child process, errno: {}",
+            errno
+        )));
     }
 
     // Read child process ready status
