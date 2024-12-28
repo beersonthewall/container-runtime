@@ -52,14 +52,11 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
     // sent. Opening the fifo is the signal.
     log_file.write_all(b"opening fifo").unwrap();
     log_file.flush().unwrap();
-    let mut f = if let Ok(f) = OpenOptions::new().read(true).open(&args.fifo_path) {
+    let _ = if let Ok(f) = OpenOptions::new().read(true).open(&args.fifo_path) {
         f
     } else {
         return 1;
     };
-
-    let mut buf = Vec::new();
-    f.read(&mut buf).unwrap();
 
     // TODO: exec, for now write logs to a file.
     log_file
