@@ -5,7 +5,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use libc::{__errno_location, c_int, clone, malloc, mkfifo, pipe2, read, size_t, EINTR, O_CLOEXEC};
+use libc::{__errno_location, c_int, clone, malloc, mkfifo, pipe2, read, size_t, CLONE_NEWCGROUP, EINTR, O_CLOEXEC, SIGCHLD};
 use log::debug;
 
 use crate::config::Config;
@@ -39,7 +39,7 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
     let fifo_path = ctx.state_dir.join(&container_id).join("exec_fifo");
     fifo(&fifo_path)?;
 
-    start_container(fifo_path, rdy_pipe_read_fd, rdy_pipe_write_fd, c)?;
+    init_container_proc(fifo_path, rdy_pipe_read_fd, rdy_pipe_write_fd, c)?;
 
     Ok(())
 }
@@ -83,7 +83,7 @@ fn pipe() -> Result<(c_int, c_int), ContainerErr> {
 }
 
 /// Clones container child process
-fn start_container(
+fn init_container_proc(
     fifo_path: PathBuf,
     rdy_pipe_read_fd: c_int,
     rdy_pipe_write_fd: c_int,
@@ -102,11 +102,13 @@ fn start_container(
     let stack_ptr = unsafe { stack.offset(STACK_SIZE as isize) };
 
     debug!("cloning child process");
-    let child_pid = unsafe { clone(init, stack_ptr, libc::SIGCHLD, args_ptr as *mut c_void) };
+    let flags = CLONE_NEWCGROUP | SIGCHLD;
+    let child_pid = unsafe { clone(init, stack_ptr, flags, args_ptr as *mut c_void) };
 
     if child_pid == -1 {
         debug!("clone failed, exiting.");
-        std::process::exit(1);
+	let errno = unsafe {*__errno_location()};
+	return Err(ContainerErr::Child(format!("failed to clone child process, errno: {}", errno)));
     }
 
     // Read child process ready status
