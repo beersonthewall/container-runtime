@@ -72,7 +72,7 @@ impl Config {
         }
         None
     }
-    
+
     pub fn cgroup_cpu(&self) -> Option<&Cpu> {
         if let Some(linux) = &self.linux {
             if let Some(resources) = &linux.resources {
@@ -138,7 +138,7 @@ impl Config {
     }
 
     pub fn process(&self) -> &Process {
-	&self.process
+        &self.process
     }
 
     fn valid_spec(&self) -> bool {

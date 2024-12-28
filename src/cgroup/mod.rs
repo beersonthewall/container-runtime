@@ -9,15 +9,10 @@ use std::io::{Read, Write};
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
-use libc::{
-    c_char,
-    statfs,
-};
+use libc::{c_char, statfs};
 use util::{read_flat_keyed_file, read_nested_keyed_file, write_nested_keyed_file};
 
-use crate::config::{
-    BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory, Pids, Rdma
-};
+use crate::config::{BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory, Pids, Rdma};
 use crate::error::ContainerErr;
 
 #[derive(Debug, Eq, PartialEq)]
@@ -28,18 +23,26 @@ pub enum CgroupVersion {
 }
 
 /// Attempts to detect which cgroup version is being used
-pub fn detect_cgroup_version<P: AsRef<Path>>(mount_point: P) -> Result<CgroupVersion, ContainerErr> {
+pub fn detect_cgroup_version<P: AsRef<Path>>(
+    mount_point: P,
+) -> Result<CgroupVersion, ContainerErr> {
     let mount_point = mount_point.as_ref().as_os_str().as_bytes().to_vec();
     let mut statfs = unsafe { std::mem::zeroed::<statfs>() };
     let err = unsafe { libc::statfs(mount_point.as_ptr() as *const c_char, &mut statfs) };
     if err < 0 {
-	return Err(ContainerErr::Cgroup(String::from("Cgroup mount at /sys/fs/cgroup not found.")));
+        return Err(ContainerErr::Cgroup(String::from(
+            "Cgroup mount at /sys/fs/cgroup not found.",
+        )));
     }
 
     match statfs.f_type {
-	libc::CGROUP2_SUPER_MAGIC => Ok(CgroupVersion::V2),
-	libc::CGROUP_SUPER_MAGIC => Err(ContainerErr::Cgroup(String::from("Cgroup v1 or hybrid not supported"))),
-	_ => Err(ContainerErr::Cgroup(String::from("/sys/fs/cgroup mount has an unsupported f_type")))
+        libc::CGROUP2_SUPER_MAGIC => Ok(CgroupVersion::V2),
+        libc::CGROUP_SUPER_MAGIC => Err(ContainerErr::Cgroup(String::from(
+            "Cgroup v1 or hybrid not supported",
+        ))),
+        _ => Err(ContainerErr::Cgroup(String::from(
+            "/sys/fs/cgroup mount has an unsupported f_type",
+        ))),
     }
 }
 
@@ -62,23 +65,23 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<
     }
 
     if let Some(cpu) = config.cgroup_cpu() {
-	set_cgroup_cpu(&cgroup_path, cpu)?;
+        set_cgroup_cpu(&cgroup_path, cpu)?;
     }
 
     if let Some(blockio) = config.blockio() {
-	set_cgroup_blockio(&cgroup_path, blockio)?;
+        set_cgroup_blockio(&cgroup_path, blockio)?;
     }
 
     if let Some(hpl) = config.hugepage_limits() {
-	set_cgroup_hugepage(&cgroup_path, hpl)?;
+        set_cgroup_hugepage(&cgroup_path, hpl)?;
     }
 
     if let Some(rdma) = config.rdma() {
-	set_cgroup_rdma(&cgroup_path, rdma)?;
+        set_cgroup_rdma(&cgroup_path, rdma)?;
     }
 
     if let Some(pids) = config.pids() {
-	set_cgroup_pids(&cgroup_path, pids)?;
+        set_cgroup_pids(&cgroup_path, pids)?;
     }
     Ok(())
 }
@@ -158,7 +161,7 @@ fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), C
 
 fn set_cgroup_cpu<P: AsRef<Path>>(cgroup: P, cpu: &Cpu) -> Result<(), ContainerErr> {
     if let Some(val) = cpu.burst {
-	write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "cpu.max.burst")?;
+        write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "cpu.max.burst")?;
     }
     Ok(())
 }
@@ -167,39 +170,39 @@ fn set_cgroup_cpu<P: AsRef<Path>>(cgroup: P, cpu: &Cpu) -> Result<(), ContainerE
 /// https://docs.kernel.org/admin-guide/cgroup-v2.html#io
 fn set_cgroup_blockio<P: AsRef<Path>>(cgroup: P, blockio: &BlockIO) -> Result<(), ContainerErr> {
     if let Some(weight) = blockio.weight {
-	let io_weight_path = cgroup.as_ref().join("io.weight");
-	let mut data = read_flat_keyed_file(&io_weight_path)?;
+        let io_weight_path = cgroup.as_ref().join("io.weight");
+        let mut data = read_flat_keyed_file(&io_weight_path)?;
 
-	if let Some(weight_devices) = &blockio.weight_device {
-	    for device in weight_devices {
-		if let Some(device_weight) = device.weight {
-		    let key = format!("{}:{}", device.major, device.minor);
-		    data.insert(key, device_weight.to_string());
-		}
-	    }
-	}
+        if let Some(weight_devices) = &blockio.weight_device {
+            for device in weight_devices {
+                if let Some(device_weight) = device.weight {
+                    let key = format!("{}:{}", device.major, device.minor);
+                    data.insert(key, device_weight.to_string());
+                }
+            }
+        }
 
-	data.insert(String::from("default"), weight.to_string());
-	util::write_flat_keyed_file(&io_weight_path, data)?;
+        data.insert(String::from("default"), weight.to_string());
+        util::write_flat_keyed_file(&io_weight_path, data)?;
     }
 
     let io_max_path = cgroup.as_ref().join("io.max");
     let mut io_max = read_nested_keyed_file(&io_max_path)?;
 
     if let Some(throttle_read_bps_device) = &blockio.throttle_read_bps_device {
-	update_device(throttle_read_bps_device, "rbps", &mut io_max);
+        update_device(throttle_read_bps_device, "rbps", &mut io_max);
     }
 
     if let Some(throttle_write_bps_device) = &blockio.throttle_write_bps_device {
-	update_device(throttle_write_bps_device, "wbps", &mut io_max);
+        update_device(throttle_write_bps_device, "wbps", &mut io_max);
     }
 
     if let Some(throttle_read_iops_device) = &blockio.throttle_read_iops_device {
-	update_device(throttle_read_iops_device, "riops", &mut io_max);
+        update_device(throttle_read_iops_device, "riops", &mut io_max);
     }
 
     if let Some(throttle_write_iops_device) = &blockio.throttle_write_iops_device {
-	update_device(throttle_write_iops_device, "wiops", &mut io_max);
+        update_device(throttle_write_iops_device, "wiops", &mut io_max);
     }
 
     write_nested_keyed_file(&io_max_path, io_max)?;
@@ -207,52 +210,65 @@ fn set_cgroup_blockio<P: AsRef<Path>>(cgroup: P, blockio: &BlockIO) -> Result<()
     Ok(())
 }
 
-fn update_device(dev_list: &[DevThrottle], subkey: &str, file_map: &mut HashMap<String, HashMap<String, String>>) {
+fn update_device(
+    dev_list: &[DevThrottle],
+    subkey: &str,
+    file_map: &mut HashMap<String, HashMap<String, String>>,
+) {
     for dev in dev_list {
-	if let Some(dev_entry) = file_map.get_mut(&format!("{}:{}", dev.major, dev.minor)) {
-	    dev_entry.insert(String::from("rbps"), dev.rate.to_string());
-	} else {
-	    let mut dev_entry = HashMap::new();
-	    dev_entry.insert(String::from(subkey), dev.rate.to_string());
-	    file_map.insert(format!("{}:{}", dev.major, dev.minor), dev_entry);
-	}
+        if let Some(dev_entry) = file_map.get_mut(&format!("{}:{}", dev.major, dev.minor)) {
+            dev_entry.insert(String::from("rbps"), dev.rate.to_string());
+        } else {
+            let mut dev_entry = HashMap::new();
+            dev_entry.insert(String::from(subkey), dev.rate.to_string());
+            file_map.insert(format!("{}:{}", dev.major, dev.minor), dev_entry);
+        }
     }
 }
 
 /// Writes information for the hugetlb controller
 /// https://docs.kernel.org/admin-guide/cgroup-v2.html#hugetlb
-fn set_cgroup_hugepage<P: AsRef<Path>>(cgroup: P, limits: &[HugePageLimits]) -> Result<(), ContainerErr> {
+fn set_cgroup_hugepage<P: AsRef<Path>>(
+    cgroup: P,
+    limits: &[HugePageLimits],
+) -> Result<(), ContainerErr> {
     for hp in limits {
-	let hp_path = cgroup.as_ref().join(format!("hugepage.{}.max", hp.page_size));
-	let mut f = OpenOptions::new()
-	    .create(true)
-	    .truncate(true)
-	    .write(true)
-	    .open(hp_path)
-	    .map_err(|e| ContainerErr::IO(e))?;
-	f.write_all(hp.limit.to_string().as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+        let hp_path = cgroup
+            .as_ref()
+            .join(format!("hugepage.{}.max", hp.page_size));
+        let mut f = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open(hp_path)
+            .map_err(|e| ContainerErr::IO(e))?;
+        f.write_all(hp.limit.to_string().as_bytes())
+            .map_err(|e| ContainerErr::IO(e))?;
     }
     Ok(())
 }
 
 /// https://docs.kernel.org/admin-guide/cgroup-v2.html#rdma
-fn set_cgroup_rdma<P: AsRef<Path>>(cgroup: P, rdma: std::collections::hash_map::Iter<String, Rdma>) -> Result<(), ContainerErr> {
+fn set_cgroup_rdma<P: AsRef<Path>>(
+    cgroup: P,
+    rdma: std::collections::hash_map::Iter<String, Rdma>,
+) -> Result<(), ContainerErr> {
     let mut rdma_data = read_nested_keyed_file(cgroup.as_ref().join("rdma.max"))?;
     for (key, rdma_cfg) in rdma {
-	let sub_map = if let Some(sub_map) = rdma_data.get_mut(key) {
-	    sub_map
-	} else {
-	    let sub_map = HashMap::new();
-	    rdma_data.insert(key.clone(), sub_map);
-	    rdma_data.get_mut(key).unwrap()
-	};
+        let sub_map = if let Some(sub_map) = rdma_data.get_mut(key) {
+            sub_map
+        } else {
+            let sub_map = HashMap::new();
+            rdma_data.insert(key.clone(), sub_map);
+            rdma_data.get_mut(key).unwrap()
+        };
 
-	if let Some(h) = rdma_cfg.hca_handles {
-	    sub_map.insert(String::from("hca_handle"), h.to_string());
-	}
-	if let Some(o) = rdma_cfg.hca_objects {
-	    sub_map.insert(String::from("hca_object"), o.to_string());
-	}
+        if let Some(h) = rdma_cfg.hca_handles {
+            sub_map.insert(String::from("hca_handle"), h.to_string());
+        }
+        if let Some(o) = rdma_cfg.hca_objects {
+            sub_map.insert(String::from("hca_object"), o.to_string());
+        }
     }
     Ok(())
 }
@@ -268,7 +284,7 @@ fn set_cgroup_pids<P: AsRef<Path>>(cgroup: P, pids: &Pids) -> Result<(), Contain
         .map_err(|e| ContainerErr::IO(e))?;
 
     f.write_all(pids.limit.to_string().as_bytes())
-	.map_err(|e| ContainerErr::IO(e))?;
+        .map_err(|e| ContainerErr::IO(e))?;
     Ok(())
 }
 

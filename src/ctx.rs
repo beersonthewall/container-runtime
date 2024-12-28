@@ -1,10 +1,6 @@
 //! Settings/Context for the container runtime itself.
 
-use std::{
-    fs,
-    io::ErrorKind,
-    path::PathBuf,
-};
+use std::{fs, io::ErrorKind, path::PathBuf};
 
 use log::debug;
 
@@ -34,7 +30,7 @@ impl Ctx {
     }
 
     pub fn state_path_for(&self, container_id: &str) -> PathBuf {
-	self.state_dir.join(container_id).join(STATE_FILENAME)
+        self.state_dir.join(container_id).join(STATE_FILENAME)
     }
 }
 
@@ -44,12 +40,12 @@ pub fn setup_ctx() -> Result<Ctx, ContainerErr> {
     let ctx = Ctx::default();
 
     if let Err(e) = fs::metadata(&ctx.state_dir) {
-	if e.kind() == ErrorKind::NotFound {
-	    debug!("state dir not found, creating...");
-	    fs::create_dir(&ctx.state_dir).map_err(|e| ContainerErr::IO(e))?;
-	} else {
-	    return Err(ContainerErr::IO(e));
-	}
+        if e.kind() == ErrorKind::NotFound {
+            debug!("state dir not found, creating...");
+            fs::create_dir(&ctx.state_dir).map_err(|e| ContainerErr::IO(e))?;
+        } else {
+            return Err(ContainerErr::IO(e));
+        }
     }
 
     debug!("DONE: setting up context.");
