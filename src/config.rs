@@ -137,6 +137,10 @@ impl Config {
         None
     }
 
+    pub fn process(&self) -> &Process {
+	&self.process
+    }
+
     fn valid_spec(&self) -> bool {
         let cwd = Path::new(&self.process.cwd);
         cwd.is_absolute()
@@ -167,25 +171,25 @@ struct Mount {
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
-struct Process {
-    terminal: bool,
+pub struct Process {
+    pub terminal: bool,
     console_size: Option<ConsoleSize>,
-    cwd: String,
-    env: Option<Vec<String>>,
-    args: Option<Vec<String>>,
-    command_line: Option<String>,
+    pub cwd: String,
+    pub env: Option<Vec<String>>,
+    pub args: Option<Vec<String>>,
+    pub command_line: Option<String>,
     user: User,
 
     // POSIX process fields
     rlimits: Option<Vec<RLimit>>,
 
     // Linux process fields
-    apparmor_profile: Option<String>,
+    pub apparmor_profile: Option<String>,
     //capabilities: todo
     //no_new_privileges: bool,
-    oom_score_adj: Option<isize>,
+    pub oom_score_adj: Option<isize>,
     scheduler: Option<LinuxScheduler>,
-    selinux_label: Option<String>,
+    pub selinux_label: Option<String>,
     io_priority: Option<LinuxIOPriority>,
 
     #[serde(rename = "execCPUAffinity")]
