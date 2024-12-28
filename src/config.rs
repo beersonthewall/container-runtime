@@ -190,7 +190,7 @@ pub struct Process {
     pub oom_score_adj: Option<isize>,
     scheduler: Option<LinuxScheduler>,
     pub selinux_label: Option<String>,
-    io_priority: Option<LinuxIOPriority>,
+    pub io_priority: Option<LinuxIOPriority>,
 
     #[serde(rename = "execCPUAffinity")]
     exec_cpu_affinity: Option<ExecCPUAffinity>,
@@ -271,9 +271,9 @@ struct ExecCPUAffinity {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
 #[derive(Deserialize)]
 #[repr(C)]
-struct LinuxIOPriority {
-    class: String,
-    priority: isize,
+pub struct LinuxIOPriority {
+    pub class: String,
+    pub priority: i32,
 }
 
 /// Linux Namespace configuration

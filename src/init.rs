@@ -9,8 +9,9 @@ use std::{
 use libc::{__errno_location, c_int, c_void, write, EINTR};
 
 use crate::container::Container;
-use crate::rlimit::set_rlimits;
+use crate::ioprio::set_iopriority;
 use crate::process::{clear_env, populate_env};
+use crate::rlimit::set_rlimits;
 
 /// Init arguments
 pub struct InitArgs {
@@ -39,6 +40,12 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
     populate_env(args.container.config());
 
     if let Err(e) = set_rlimits(args.container.config()) {
+        log_file.write_all(format!("{:?}", e).as_bytes()).unwrap();
+        log_file.flush().unwrap();
+        std::process::exit(1);
+    }
+
+    if let Err(e) = set_iopriority(args.container.config()) {
         log_file.write_all(format!("{:?}", e).as_bytes()).unwrap();
         log_file.flush().unwrap();
         std::process::exit(1);

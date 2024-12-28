@@ -10,6 +10,7 @@ pub enum ContainerErr {
     Fifo(&'static str),
     Init(&'static str),
     Rlimit(String),
+    IoPriority(String),
 }
 
 impl ContainerErr {

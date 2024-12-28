@@ -6,6 +6,7 @@ mod config;
 mod container;
 mod ctx;
 mod init;
+mod ioprio;
 mod process;
 mod rlimit;
 mod state;
