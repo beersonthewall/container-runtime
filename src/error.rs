@@ -5,6 +5,10 @@ pub enum ContainerErr {
     Child(String),
     IO(std::io::Error),
     Cgroup(String),
+    State(String),
+    Pipe(String),
+    Fifo(&'static str),
+    Init(&'static str),
 }
 
 impl ContainerErr {

@@ -50,7 +50,7 @@ impl Config {
             return Err(ContainerErr::Bundle(String::new()));
         }
 
-        debug!("config.json lodaded");
+        debug!("config.json loaded");
         Ok(config)
     }
 
