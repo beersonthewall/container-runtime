@@ -10,6 +10,7 @@ use libc::{__errno_location, c_int, c_void, write, EINTR};
 
 use crate::container::Container;
 use crate::rlimit::set_rlimits;
+use crate::process::{clear_env, populate_env};
 
 /// Init arguments
 pub struct InitArgs {
@@ -33,6 +34,9 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
 
     let args = args as *mut InitArgs;
     let args = unsafe { args.as_mut().unwrap() };
+
+    clear_env();
+    populate_env(args.container.config());
 
     if let Err(e) = set_rlimits(args.container.config()) {
         log_file.write_all(format!("{:?}", e).as_bytes()).unwrap();
