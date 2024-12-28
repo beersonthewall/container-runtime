@@ -8,7 +8,7 @@ use std::io::{
     Write
 };
 use std::time::UNIX_EPOCH;
-use std::{path::PathBuf, time::SystemTime};
+use std::{path::{Path, PathBuf}, time::SystemTime};
 
 /// Init arguments
 #[repr(C)]
@@ -38,13 +38,7 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
 
     // Wait for FIFO to be opened. Then we can exec, at this moment we don't care what's
     // sent. Opening the fifo is the signal.
-    log_file.write_all(b"opening fifo").unwrap();
-    log_file.flush().unwrap();
-    let _ = if let Ok(f) = OpenOptions::new().read(true).open(&args.fifo_path) {
-        f
-    } else {
-        return 1;
-    };
+    wait_for_exec(&args.fifo_path, &mut log_file);
 
     // TODO: exec, for now write logs to a file.
     log_file
@@ -74,4 +68,10 @@ fn notify_container_ready(fd: c_int, log_file: &mut File) {
             }
         }
     }
+}
+
+fn wait_for_exec<P: AsRef<Path>>(fifo: P, log_file: &mut File) {
+    log_file.write_all(b"opening fifo").unwrap();
+    log_file.flush().unwrap();
+    let _ = OpenOptions::new().read(true).open(fifo).unwrap();
 }
