@@ -19,6 +19,10 @@ impl Container {
         }
     }
 
+    pub fn state(&self) -> &State {
+	&self.state
+    }
+
     /// Writes container state to <ctx.state_dir>/<container_id>/state.json
     pub fn write_state(&self, ctx: &Ctx) -> Result<(), ContainerErr> {
         let raw_state =

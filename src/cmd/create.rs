@@ -13,7 +13,7 @@ use log::debug;
 
 use crate::config::Config;
 use crate::container::Container;
-use crate::ctx::setup_ctx;
+use crate::ctx::{setup_ctx, Ctx};
 use crate::error::ContainerErr;
 use crate::init::{init, InitArgs};
 
@@ -42,7 +42,7 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
     let fifo_path = ctx.state_dir.join(&container_id).join("exec_fifo");
     fifo(&fifo_path)?;
 
-    init_container_proc(fifo_path, rdy_pipe_read_fd, rdy_pipe_write_fd, c)?;
+    init_container_proc(fifo_path, rdy_pipe_read_fd, rdy_pipe_write_fd, c, ctx)?;
 
     Ok(())
 }
@@ -91,11 +91,14 @@ fn init_container_proc(
     rdy_pipe_read_fd: c_int,
     rdy_pipe_write_fd: c_int,
     container: Container,
+    ctx: Ctx,
 ) -> Result<(), ContainerErr> {
+
     let mut init_args = InitArgs {
         fifo_path: fifo_path.clone(),
         rdy_pipe_write_fd,
         container,
+	ctx,
     };
     let args_ptr: *mut InitArgs = &mut init_args;
 

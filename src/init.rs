@@ -8,7 +8,9 @@ use std::{
 
 use libc::{__errno_location, c_int, c_void, write, EINTR};
 
+use crate::cgroup::{create_cgroup, detect_cgroup_version};
 use crate::container::Container;
+use crate::ctx::Ctx;
 use crate::ioprio::set_iopriority;
 use crate::process::{clear_env, populate_env};
 use crate::rlimit::set_rlimits;
@@ -18,6 +20,7 @@ pub struct InitArgs {
     pub fifo_path: PathBuf,
     pub rdy_pipe_write_fd: c_int,
     pub container: Container,
+    pub ctx: Ctx,
 }
 
 /// First thing that runs in a new container process.
@@ -46,6 +49,21 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
     }
 
     if let Err(e) = set_iopriority(args.container.config()) {
+        log_file.write_all(format!("{:?}", e).as_bytes()).unwrap();
+        log_file.flush().unwrap();
+        std::process::exit(1);
+    }
+
+    if let Err(e) = detect_cgroup_version(args.ctx.cgroups_root()) {
+        log_file.write_all(format!("{:?}", e).as_bytes()).unwrap();
+        log_file.flush().unwrap();
+        std::process::exit(1);
+    }
+
+    let mut cgroup_path = PathBuf::new();
+    cgroup_path.push(args.ctx.cgroups_root());
+    cgroup_path.push(args.container.state().id());
+    if let Err(e) = create_cgroup(cgroup_path, args.container.config()) {
         log_file.write_all(format!("{:?}", e).as_bytes()).unwrap();
         log_file.flush().unwrap();
         std::process::exit(1);
