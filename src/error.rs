@@ -7,7 +7,7 @@ pub enum ContainerErr {
     Cgroup(String),
     State(String),
     Pipe(String),
-    Fifo(&'static str),
+    Fifo(String),
     Init(&'static str),
     Rlimit(String),
     IoPriority(String),

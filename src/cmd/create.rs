@@ -54,16 +54,16 @@ fn fifo<P: AsRef<Path>>(path: P) -> Result<(), ContainerErr> {
         path
     } else {
         debug!("fifo path: {:?}", path.as_ref());
-        return Err(ContainerErr::Fifo("Fifo path not valid unicode"));
+        return Err(ContainerErr::Fifo(String::from("Fifo path not valid unicode")));
     };
 
     debug!("path: {}", path);
-    let path = CString::new(path).map_err(|_| ContainerErr::Fifo("Invalid FIFO path"))?;
+    let path = CString::new(path).map_err(|_| ContainerErr::Fifo(String::from("Invalid FIFO path")))?;
     let err = unsafe { mkfifo(path.as_c_str().as_ptr(), 0o622) };
     if err < 0 {
         debug!("{:?}", err);
         unsafe { debug!("errno {:?}", *__errno_location()) };
-        return Err(ContainerErr::Fifo("Failed to create fifo."));
+        return Err(ContainerErr::Fifo(String::from("Failed to create fifo.")));
     }
 
     debug!("done creating fifo");
@@ -132,13 +132,11 @@ fn init_container_proc(
     }
 
     debug!("opening FIFO");
-    let mut f = OpenOptions::new()
+    let _ = OpenOptions::new()
         .write(true)
         .append(true)
         .open(&fifo_path)
-        .map_err(|_| ContainerErr::Fifo("failed to open fifo"))?;
-    f.write_all(b"exec")
-        .map_err(|_| ContainerErr::Fifo("failed to open fifo"))?;
+        .map_err(|e| ContainerErr::Fifo(format!("err: {:?}", e)))?;
     debug!("done with fifo");
 
     Ok(())
