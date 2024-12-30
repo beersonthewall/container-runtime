@@ -4,6 +4,7 @@ use libc::{
     RLIMIT_MSGQUEUE, RLIMIT_NICE, RLIMIT_NOFILE, RLIMIT_NPROC, RLIMIT_RSS, RLIMIT_RTPRIO,
     RLIMIT_RTTIME, RLIMIT_SIGPENDING, RLIMIT_STACK,
 };
+use log::debug;
 
 use crate::{
     config::{Config, RLimit},
@@ -42,6 +43,7 @@ pub fn set_rlimits(config: &Config) -> Result<(), ContainerErr> {
 }
 
 fn set_rlimit(resource: __rlimit_resource_t, rlimit: &RLimit) -> Result<(), ContainerErr> {
+    debug!("set rlimit {:?}", rlimit);
     unsafe {
         let mut rlim = std::mem::zeroed::<rlimit>();
         // https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-process

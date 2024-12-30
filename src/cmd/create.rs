@@ -1,12 +1,10 @@
 //! Create cmd
 
 use std::ffi::{c_void, CString};
-use std::fs::OpenOptions;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use libc::{
-    __errno_location, c_int, clone, malloc, mkfifo, pipe2, read, size_t, CLONE_NEWCGROUP, EINTR,
+    __errno_location, c_int, clone, malloc, mkfifo, pipe2, read, size_t, EINTR,
     O_CLOEXEC, SIGCHLD,
 };
 use log::debug;
@@ -16,6 +14,7 @@ use crate::container::Container;
 use crate::ctx::{setup_ctx, Ctx};
 use crate::error::ContainerErr;
 use crate::init::{init, InitArgs};
+use crate::namespaces::{clone_namespace_flags, namespaces_to_join};
 
 /// Creates a new container from the OCI bundle located at bundle_path
 pub fn create(container_id: String, bundle_path: String) -> Result<(), ContainerErr> {
@@ -94,13 +93,24 @@ fn init_container_proc(
     ctx: Ctx,
 ) -> Result<(), ContainerErr> {
 
+    let mut flags = SIGCHLD;
+    if let Some(ns) = &container.config().linux_namespaces() {
+	flags |= clone_namespace_flags(ns);
+    }
+
+    let join_ns = if let Some(ns) = &container.config().linux_namespaces() {
+	namespaces_to_join(ns)
+    } else {
+	Vec::new()
+    };
+
     let mut init_args = InitArgs {
         fifo_path: fifo_path.clone(),
         rdy_pipe_write_fd,
         container,
 	ctx,
+	join_ns,
     };
-    let args_ptr: *mut InitArgs = &mut init_args;
 
     debug!("allocating container stack");
     const STACK_SIZE: size_t = 1024 * 1024;
@@ -108,8 +118,9 @@ fn init_container_proc(
     let stack_ptr = unsafe { stack.offset(STACK_SIZE as isize) };
 
     debug!("cloning child process");
-    let flags = CLONE_NEWCGROUP | SIGCHLD;
-    let child_pid = unsafe { clone(init, stack_ptr, flags, args_ptr as *mut c_void) };
+    let child_pid = unsafe {
+	clone(init, stack_ptr, flags, &raw mut init_args as *mut c_void)
+    };
 
     if child_pid == -1 {
         debug!("clone failed, exiting.");
@@ -122,10 +133,9 @@ fn init_container_proc(
 
     // Read child process ready status
     let mut ret: c_int = 0;
-    let ret_ptr: *mut c_int = &mut ret;
     debug!("waiting for container ready status...");
     unsafe {
-        while read(rdy_pipe_read_fd, ret_ptr as *mut c_void, size_of_val(&ret)) == -1
+        while read(rdy_pipe_read_fd, &raw mut ret as *mut c_void, size_of_val(&ret)) == -1
             && *libc::__errno_location() == EINTR
         {}
     }
@@ -134,13 +144,15 @@ fn init_container_proc(
         return Err(ContainerErr::Init("Error initializing container process"));
     }
 
-    debug!("opening FIFO");
-    let _ = OpenOptions::new()
-        .write(true)
-        .append(true)
-        .open(&fifo_path)
-        .map_err(|e| ContainerErr::Fifo(format!("err: {:?}", e)))?;
-    debug!("done with fifo");
+    // TODO: only open this when we run the start command.
+    // probably need to detach the child process?
+    // debug!("opening FIFO");
+    // let _ = OpenOptions::new()
+    //     .write(true)
+    //     .append(true)
+    //     .open(&fifo_path)
+    //     .map_err(|e| ContainerErr::Fifo(format!("err: {:?}", e)))?;
+    // debug!("done with fifo");
 
     Ok(())
 }

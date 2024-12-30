@@ -2,13 +2,15 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
 
+pub type Pid = u32;
+
 /// Container state
 /// https://github.com/opencontainers/runtime-spec/blob/main/schema/state-schema.json
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct State {
     oci_version: String,
-    pid: usize,
+    pid: Pid,
     #[serde(rename = "id")]
     container_id: String,
     status: Status,
@@ -30,6 +32,10 @@ impl State {
 
     pub fn id(&self) -> &str {
         &self.container_id
+    }
+
+    pub fn set_pid(&mut self, pid: Pid) {
+	self.pid = pid;
     }
 }
 

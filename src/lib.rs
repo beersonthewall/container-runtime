@@ -7,6 +7,8 @@ mod container;
 mod ctx;
 mod init;
 mod ioprio;
+mod namespaces;
 mod process;
 mod rlimit;
+mod rootfs;
 mod state;

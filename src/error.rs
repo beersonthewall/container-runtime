@@ -11,6 +11,8 @@ pub enum ContainerErr {
     Init(&'static str),
     Rlimit(String),
     IoPriority(String),
+    InvalidNamespace(String),
+    JoinNamespace(String),
 }
 
 impl ContainerErr {

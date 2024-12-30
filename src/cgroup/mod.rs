@@ -5,7 +5,7 @@ mod util;
 
 use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
 
