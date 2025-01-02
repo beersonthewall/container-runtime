@@ -1,6 +1,8 @@
 //! Settings/Context for the container runtime itself.
 
-use std::{fs, io::ErrorKind, path::PathBuf};
+use std::{fs, io::ErrorKind, path::{
+    PathBuf, Path}
+};
 
 use log::debug;
 
@@ -12,20 +14,20 @@ const BASE_DIR: &'static str = "/run/generic_brand_container_runtime";
 /// Container runtime settings
 pub struct Ctx {
     pub state_dir: PathBuf,
-    cgroups_root: String,
+    cgroups_root: PathBuf,
 }
 
 impl Default for Ctx {
     fn default() -> Self {
         Self {
             state_dir: PathBuf::from(BASE_DIR),
-            cgroups_root: String::from("/sys/fs/cgroup"),
+            cgroups_root: PathBuf::from("/sys/fs/cgroup"),
         }
     }
 }
 
 impl Ctx {
-    pub fn cgroups_root(&self) -> &str {
+    pub fn cgroups_root(&self) -> &Path {
         &self.cgroups_root
     }
 

@@ -8,7 +8,7 @@ use std::ptr::addr_of;
 use libc::{__errno_location, c_int, c_void, write, EINTR};
 use log::debug;
 
-use crate::cgroup::{create_cgroup, detect_cgroup_version};
+use crate::cgroup::{create_cgroup, detect_cgroup_version, join_cgroup};
 use crate::config::Namespace;
 use crate::container::Container;
 use crate::ctx::Ctx;
@@ -28,15 +28,12 @@ pub struct InitArgs {
 }
 
 /// First thing that runs in a new container process.
-pub extern "C" fn init(args: *mut c_void) -> c_int {
-    let args = args as *mut InitArgs;
-    let args = unsafe { args.as_mut().unwrap() };
-
+pub extern "C" fn init(mut args: InitArgs) -> c_int {
     let pid = std::process::id();
     args.container.state_mut().set_pid(pid);
 
     if let Err(e) = join_namspaces(&args.join_ns) {
-	debug!("{:?}", e);
+	debug!("join_namespaces {:?}", e);
 	exit(1);
     }
 
@@ -44,32 +41,22 @@ pub extern "C" fn init(args: *mut c_void) -> c_int {
     populate_env(args.container.config());
 
     if let Err(e) = set_rlimits(args.container.config()) {
-	debug!("{:?}", e);
+	debug!("set_rlimits {:?}", e);
         exit(1);
     }
 
     if let Err(e) = set_iopriority(args.container.config()) {
-	debug!("{:?}", e);
+	debug!("set_iopriority {:?}", e);
         exit(1);
     }
 
     if let Err(e) = detect_cgroup_version(args.ctx.cgroups_root()) {
-	debug!("{:?}", e);
+	debug!("detect_cgroup_version {:?}", e);
         exit(1);
     }
-
-    let mut cgroup_path = PathBuf::new();
-    cgroup_path.push(args.ctx.cgroups_root());
-    cgroup_path.push(args.container.state().id());
-    if let Err(e) = create_cgroup(cgroup_path, args.container.config()) {
-	debug!("{:?}", e);
-        exit(1);
-    }
-
-    // TODO: actually join the cgroup
 
     if let Err(e) = setup_rootfs(args.container.config()) {
-        debug!("{:?}", e);
+        debug!("setup_rootfs {:?}", e);
         exit(1);
     }
 

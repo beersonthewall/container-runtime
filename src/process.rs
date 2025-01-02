@@ -1,8 +1,9 @@
 //! Module for manipulating a container process' settings.
 
-use crate::config::Config;
+use crate::{config::Config, error::ContainerErr, state::Pid};
+use libc::{c_int, clone_args, syscall, SYS_clone3, __errno_location, malloc, pid_t, size_t, CLONE_INTO_CGROUP, SIGCHLD};
 use log::debug;
-use std::env::set_var;
+use std::{env::set_var, os::fd::RawFd};
 
 /// Populates the environment of the current process from the config
 pub fn populate_env(cfg: &Config) {
@@ -29,4 +30,24 @@ pub fn clear_env() {
             unsafe { std::env::remove_var(key) }
         }
     }
+}
+
+/// Wrapper for the clone3 syscall
+pub fn clone3(flags: c_int, cgroup_fd: RawFd) -> Result<Pid, ContainerErr> {
+    debug!("clone3");
+    let mut args = unsafe { std::mem::zeroed::<clone_args>() };
+
+    args.flags |= flags as u64;
+    args.flags |= CLONE_INTO_CGROUP as u64;
+    args.cgroup = cgroup_fd as u64;
+
+    let pid = unsafe {
+	syscall(SYS_clone3, &raw mut args as *mut clone_args, size_of::<clone_args>())
+    };
+    if pid == -1 {
+	return Err(ContainerErr::Clone(format!("clone failed, errno: {}",
+					       unsafe { *__errno_location() })));
+    }
+
+    Ok(pid as Pid)
 }

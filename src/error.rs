@@ -13,6 +13,7 @@ pub enum ContainerErr {
     IoPriority(String),
     InvalidNamespace(String),
     JoinNamespace(String),
+    Clone(String),
 }
 
 impl ContainerErr {
