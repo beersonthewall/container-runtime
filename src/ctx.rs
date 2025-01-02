@@ -31,6 +31,10 @@ impl Ctx {
         &self.cgroups_root
     }
 
+    pub fn state_dir(&self, container_id: &str) -> PathBuf {
+	self.state_dir.join(container_id)
+    }
+
     pub fn state_path_for(&self, container_id: &str) -> PathBuf {
         self.state_dir.join(container_id).join(STATE_FILENAME)
     }

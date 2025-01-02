@@ -158,15 +158,6 @@ fn init_container_proc(
             return Err(ContainerErr::Init("Error initializing container process"));
 	}
 
-	// TODO: only open this when we run the start command.
-	// probably need to detach the child process?
-	debug!("opening FIFO");
-	let _ = OpenOptions::new()
-	    .write(true)
-	    .append(true)
-	    .open(&fifo_path)
-	    .map_err(|e| ContainerErr::Fifo(format!("err: {:?}", e)))?;
-	debug!("done with fifo");
 	return Ok(());
     }
 }

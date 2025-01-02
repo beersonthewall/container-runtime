@@ -1,7 +1,7 @@
-//! Module for manipulating a container process' settings.
+//! Module for manipulating a container process.
 
 use crate::{config::Config, error::ContainerErr, state::Pid};
-use libc::{c_int, clone_args, syscall, SYS_clone3, __errno_location, malloc, pid_t, size_t, CLONE_INTO_CGROUP, SIGCHLD};
+use libc::{c_int, clone_args, syscall, SYS_clone3, __errno_location, CLONE_INTO_CGROUP, SIG_IGN};
 use log::debug;
 use std::{env::set_var, os::fd::RawFd};
 
@@ -40,6 +40,7 @@ pub fn clone3(flags: c_int, cgroup_fd: RawFd) -> Result<Pid, ContainerErr> {
     args.flags |= flags as u64;
     args.flags |= CLONE_INTO_CGROUP as u64;
     args.cgroup = cgroup_fd as u64;
+    args.exit_signal = SIG_IGN as u64;
 
     let pid = unsafe {
 	syscall(SYS_clone3, &raw mut args as *mut clone_args, size_of::<clone_args>())
