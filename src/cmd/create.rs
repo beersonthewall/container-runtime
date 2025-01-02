@@ -5,7 +5,6 @@ use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
-
 use crate::cgroup::create_cgroup;
 use crate::config::Config;
 use crate::container::Container;
@@ -14,7 +13,7 @@ use crate::error::ContainerErr;
 use crate::init::{init, InitArgs};
 use crate::namespaces::{clone_namespace_flags, namespaces_to_join};
 use crate::process::clone3;
-use libc::{__errno_location, c_int, mkfifo, read, EINTR, O_CLOEXEC};
+use libc::{__errno_location, c_int, mkfifo, read, pipe2, EINTR, O_CLOEXEC};
 use log::debug;
 
 /// Creates a new container from the OCI bundle located at bundle_path

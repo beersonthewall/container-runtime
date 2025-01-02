@@ -31,11 +31,11 @@ impl Container {
     pub fn write_state(&self, ctx: &Ctx) -> Result<(), ContainerErr> {
         let raw_state =
             serde_json::to_string(&self.state).map_err(|e| ContainerErr::State(e.to_string()))?;
-        let container_dir = ctx.state_dir.join(self.state.id());
+        let container_dir = ctx.state_dir(self.state.id());
         let container_state_path = container_dir.join("state.json");
 
-        if let Err(_) = fs::metadata(container_dir) {
-            fs::create_dir(ctx.state_dir.join(self.state.id())).map_err(|e| ContainerErr::IO(e))?;
+        if let Err(_) = fs::metadata(&container_dir) {
+            fs::create_dir(&container_dir).map_err(|e| ContainerErr::IO(e))?;
         }
 
         let mut f = OpenOptions::new()
