@@ -43,11 +43,17 @@ pub fn clone3(flags: c_int, cgroup_fd: RawFd) -> Result<Pid, ContainerErr> {
     args.exit_signal = SIG_IGN as u64;
 
     let pid = unsafe {
-	syscall(SYS_clone3, &raw mut args as *mut clone_args, size_of::<clone_args>())
+        syscall(
+            SYS_clone3,
+            &raw mut args as *mut clone_args,
+            size_of::<clone_args>(),
+        )
     };
     if pid == -1 {
-	return Err(ContainerErr::Clone(format!("clone failed, errno: {}",
-					       unsafe { *__errno_location() })));
+        return Err(ContainerErr::Clone(format!(
+            "clone failed, errno: {}",
+            unsafe { *__errno_location() }
+        )));
     }
 
     Ok(pid as Pid)

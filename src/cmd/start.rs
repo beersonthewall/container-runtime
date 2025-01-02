@@ -1,7 +1,7 @@
-use std::fs::OpenOptions;
-use log::debug;
 use crate::ctx::setup_ctx;
 use crate::error::ContainerErr;
+use log::debug;
+use std::fs::OpenOptions;
 
 /// Starts the container process.
 pub fn start(container_id: String) -> Result<(), ContainerErr> {
@@ -11,10 +11,10 @@ pub fn start(container_id: String) -> Result<(), ContainerErr> {
 
     debug!("opening FIFO");
     let _ = OpenOptions::new()
-	.write(true)
-	.append(true)
-	.open(&fifo_path)
-	.map_err(|e| ContainerErr::Fifo(format!("err: {:?}", e)))?;
+        .write(true)
+        .append(true)
+        .open(&fifo_path)
+        .map_err(|e| ContainerErr::Fifo(format!("err: {:?}", e)))?;
     debug!("done with fifo");
 
     Ok(())

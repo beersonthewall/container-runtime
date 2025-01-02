@@ -1,7 +1,9 @@
 //! Settings/Context for the container runtime itself.
 
-use std::{fs, io::ErrorKind, path::{
-    PathBuf, Path}
+use std::{
+    fs,
+    io::ErrorKind,
+    path::{Path, PathBuf},
 };
 
 use log::debug;
@@ -32,7 +34,7 @@ impl Ctx {
     }
 
     pub fn state_dir(&self, container_id: &str) -> PathBuf {
-	self.state_dir.join(container_id)
+        self.state_dir.join(container_id)
     }
 
     pub fn state_path_for(&self, container_id: &str) -> PathBuf {

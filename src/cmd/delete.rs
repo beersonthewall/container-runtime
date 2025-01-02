@@ -15,8 +15,8 @@ pub fn delete(container_id: String) -> Result<(), ContainerErr> {
     // Cleanup cgroup
     let cgroup_path = ctx.cgroups_root().join(&container_id);
     if let Ok(_) = fs::metadata(&cgroup_path) {
-	debug!("cleaning up cgroup", );
-	fs::remove_dir(&cgroup_path).map_err(|e| ContainerErr::IO(e))?;
+        debug!("cleaning up cgroup",);
+        fs::remove_dir(&cgroup_path).map_err(|e| ContainerErr::IO(e))?;
     }
 
     Ok(())

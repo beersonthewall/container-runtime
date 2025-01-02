@@ -20,11 +20,11 @@ impl Container {
     }
 
     pub fn state(&self) -> &State {
-	&self.state
+        &self.state
     }
 
     pub fn state_mut(&mut self) -> &mut State {
-	&mut self.state
+        &mut self.state
     }
 
     /// Writes container state to <ctx.state_dir>/<container_id>/state.json

@@ -52,14 +52,15 @@ pub fn join_cgroup<P: AsRef<Path>>(cgroup: P) -> Result<(), ContainerErr> {
     let proc_file = cgroup.as_ref().join("cgroup.procs");
     debug!("proc file {:?}", proc_file);
     let mut f = OpenOptions::new()
-	.create(true)
+        .create(true)
         .write(true)
-	.append(true)
+        .append(true)
         .open(proc_file)
         .map_err(|e| ContainerErr::IO(e))?;
 
     let id = std::process::id().to_string();
-    f.write_all(id.as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+    f.write_all(id.as_bytes())
+        .map_err(|e| ContainerErr::IO(e))?;
     debug!("done");
 
     Ok(())
@@ -146,14 +147,14 @@ fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), C
     //File::read_to_string("memory.current", &current).map_err(|e| ContainerErr::IO(e))?;
 
     if let Some(val) = memory.limit {
-	debug!("memory.limit: {:?}", val);
+        debug!("memory.limit: {:?}", val);
         write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.limit")?;
     }
 
     // FIXME: is this memory.low for cgroups v2? Which is the version I'm coding against
     // accidentally read v1 docs for filenames.... oops
     if let Some(val) = memory.reservation {
-	debug!("memory.reservation: {:?}", val);
+        debug!("memory.reservation: {:?}", val);
         write_to_cgroup_file(
             val.to_string().as_bytes(),
             &cgroup,
@@ -162,24 +163,24 @@ fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), C
     }
 
     if let Some(val) = memory.swap {
-	debug!("memory.swap: {:?}", val);
+        debug!("memory.swap: {:?}", val);
         write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.swap.max")?;
     }
 
     if let Some(val) = memory.swappiness {
-	debug!("memory.swappiness: {:?}", val);
+        debug!("memory.swappiness: {:?}", val);
         write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "memory.swappiness")?;
     }
 
     if let Some(val) = memory.disable_oom_killer {
         let toggle = if val { b"1" } else { b"0" };
-	debug!("memory.disable_oom_killer: {:?}", toggle);
+        debug!("memory.disable_oom_killer: {:?}", toggle);
         write_to_cgroup_file(toggle, &cgroup, "memory.oom_control")?;
     }
 
     if let Some(val) = memory.use_hierarchy {
         let toggle = if val { b"1" } else { b"0" };
-	debug!("memory.use_hierarchy: {:?}", toggle);
+        debug!("memory.use_hierarchy: {:?}", toggle);
         write_to_cgroup_file(toggle, &cgroup, "memory.use_hierarchy")?;
     }
 
@@ -188,7 +189,7 @@ fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), C
 
 fn set_cgroup_cpu<P: AsRef<Path>>(cgroup: P, cpu: &Cpu) -> Result<(), ContainerErr> {
     if let Some(val) = cpu.burst {
-	debug!("cpu burst: {:?}", val);
+        debug!("cpu burst: {:?}", val);
         write_to_cgroup_file(val.to_string().as_bytes(), &cgroup, "cpu.max.burst")?;
     }
     Ok(())
@@ -203,7 +204,7 @@ fn set_cgroup_blockio<P: AsRef<Path>>(cgroup: P, blockio: &BlockIO) -> Result<()
 
         if let Some(weight_devices) = &blockio.weight_device {
             for device in weight_devices {
-		debug!("weight device: {:?}", device);
+                debug!("weight device: {:?}", device);
                 if let Some(device_weight) = device.weight {
                     let key = format!("{}:{}", device.major, device.minor);
                     data.insert(key, device_weight.to_string());
@@ -245,7 +246,7 @@ fn update_device(
     file_map: &mut HashMap<String, HashMap<String, String>>,
 ) {
     for dev in dev_list {
-	debug!("device {:?}", dev);
+        debug!("device {:?}", dev);
         if let Some(dev_entry) = file_map.get_mut(&format!("{}:{}", dev.major, dev.minor)) {
             dev_entry.insert(String::from("rbps"), dev.rate.to_string());
         } else {
@@ -263,7 +264,7 @@ fn set_cgroup_hugepage<P: AsRef<Path>>(
     limits: &[HugePageLimits],
 ) -> Result<(), ContainerErr> {
     for hp in limits {
-	debug!("hugepage {:?}", hp);
+        debug!("hugepage {:?}", hp);
         let hp_path = cgroup
             .as_ref()
             .join(format!("hugepage.{}.max", hp.page_size));
@@ -286,7 +287,7 @@ fn set_cgroup_rdma<P: AsRef<Path>>(
 ) -> Result<(), ContainerErr> {
     let mut rdma_data = read_nested_keyed_file(cgroup.as_ref().join("rdma.max"))?;
     for (key, rdma_cfg) in rdma {
-	debug!("rdma {:?}", rdma_cfg);
+        debug!("rdma {:?}", rdma_cfg);
         let sub_map = if let Some(sub_map) = rdma_data.get_mut(key) {
             sub_map
         } else {

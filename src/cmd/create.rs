@@ -6,11 +6,6 @@ use std::io::Write;
 use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
 
-use libc::{
-    __errno_location, c_int, clone, malloc, mkfifo, pid_t, pipe2, read, size_t, EINTR, O_CLOEXEC, SIGCHLD, WCOREDUMP, WEXITSTATUS, WIFEXITED, WIFSIGNALED, WTERMSIG
-};
-use log::debug;
-
 use crate::cgroup::create_cgroup;
 use crate::config::Config;
 use crate::container::Container;
@@ -19,6 +14,8 @@ use crate::error::ContainerErr;
 use crate::init::{init, InitArgs};
 use crate::namespaces::{clone_namespace_flags, namespaces_to_join};
 use crate::process::clone3;
+use libc::{__errno_location, c_int, mkfifo, read, EINTR, O_CLOEXEC};
+use log::debug;
 
 /// Creates a new container from the OCI bundle located at bundle_path
 pub fn create(container_id: String, bundle_path: String) -> Result<(), ContainerErr> {
@@ -57,11 +54,14 @@ fn fifo<P: AsRef<Path>>(path: P) -> Result<(), ContainerErr> {
         path
     } else {
         debug!("fifo path: {:?}", path.as_ref());
-        return Err(ContainerErr::Fifo(String::from("Fifo path not valid unicode")));
+        return Err(ContainerErr::Fifo(String::from(
+            "Fifo path not valid unicode",
+        )));
     };
 
     debug!("path: {}", path);
-    let path = CString::new(path).map_err(|_| ContainerErr::Fifo(String::from("Invalid FIFO path")))?;
+    let path =
+        CString::new(path).map_err(|_| ContainerErr::Fifo(String::from("Invalid FIFO path")))?;
     let err = unsafe { mkfifo(path.as_c_str().as_ptr(), 0o622) };
     if err < 0 {
         debug!("{:?}", err);
@@ -96,16 +96,15 @@ fn init_container_proc(
     container: Container,
     ctx: Ctx,
 ) -> Result<(), ContainerErr> {
-
     let mut flags = 0;
     if let Some(ns) = &container.config().linux_namespaces() {
-	flags |= clone_namespace_flags(ns);
+        flags |= clone_namespace_flags(ns);
     }
 
     let join_ns = if let Some(ns) = &container.config().linux_namespaces() {
-	namespaces_to_join(ns)
+        namespaces_to_join(ns)
     } else {
-	Vec::new()
+        Vec::new()
     };
 
     // Create the cgroup in the parent process. We're going to use CLONE_INTO_CGROUP flag
@@ -119,45 +118,60 @@ fn init_container_proc(
         fifo_path: fifo_path.clone(),
         rdy_pipe_write_fd,
         container,
-	ctx,
-	join_ns,
+        ctx,
+        join_ns,
     };
 
     debug!("cloning child process");
     log::logger().flush();
-    let cgroup_file = OpenOptions::new().read(true).open(&cgroup_path).map_err(|e| ContainerErr::IO(e))?;
+    let cgroup_file = OpenOptions::new()
+        .read(true)
+        .open(&cgroup_path)
+        .map_err(|e| ContainerErr::IO(e))?;
     let pid = clone3(flags, cgroup_file.as_raw_fd())?;
     debug!("PID: {}", pid);
     if pid == 0 {
-	// child process'
-	let mut f = OpenOptions::new().create(true).truncate(true).write(true).open("/tmp/output").unwrap();
-	f.write_all(b"child is alive...").unwrap();
-	f.flush().unwrap();
-	let err = init(init_args);
-	if err != 0 {
-	    f.write_all(b"ded").unwrap();
-	    f.flush().unwrap();
-	    return Err(ContainerErr::Child(format!("child process crashed exit code {}", err)));
-	} else {
-	    f.write_all(b"child is done successfully...").unwrap();
-	    f.flush().unwrap();
-	    return Ok(());
-	}
+        // child process'
+        let mut f = OpenOptions::new()
+            .create(true)
+            .truncate(true)
+            .write(true)
+            .open("/tmp/output")
+            .unwrap();
+        f.write_all(b"child is alive...").unwrap();
+        f.flush().unwrap();
+        let err = init(init_args);
+        if err != 0 {
+            f.write_all(b"ded").unwrap();
+            f.flush().unwrap();
+            return Err(ContainerErr::Child(format!(
+                "child process crashed exit code {}",
+                err
+            )));
+        } else {
+            f.write_all(b"child is done successfully...").unwrap();
+            f.flush().unwrap();
+            return Ok(());
+        }
     } else {
-	// parent
-	// Read child process ready status
-	let mut ret: c_int = 0;
-	debug!("waiting for container ready status... {}", pid);
-	unsafe {
-            while read(rdy_pipe_read_fd, &raw mut ret as *mut c_void, size_of_val(&ret)) == -1
-		&& *libc::__errno_location() == EINTR
+        // parent
+        // Read child process ready status
+        let mut ret: c_int = 0;
+        debug!("waiting for container ready status... {}", pid);
+        unsafe {
+            while read(
+                rdy_pipe_read_fd,
+                &raw mut ret as *mut c_void,
+                size_of_val(&ret),
+            ) == -1
+                && *libc::__errno_location() == EINTR
             {}
-	}
+        }
 
-	if ret > 0 {
+        if ret > 0 {
             return Err(ContainerErr::Init("Error initializing container process"));
-	}
+        }
 
-	return Ok(());
+        return Ok(());
     }
 }

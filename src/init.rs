@@ -33,25 +33,25 @@ pub extern "C" fn init(mut args: InitArgs) -> c_int {
     args.container.state_mut().set_pid(pid);
 
     if let Err(e) = join_namspaces(&args.join_ns) {
-	debug!("join_namespaces {:?}", e);
-	exit(1);
+        debug!("join_namespaces {:?}", e);
+        exit(1);
     }
 
     clear_env();
     populate_env(args.container.config());
 
     if let Err(e) = set_rlimits(args.container.config()) {
-	debug!("set_rlimits {:?}", e);
+        debug!("set_rlimits {:?}", e);
         exit(1);
     }
 
     if let Err(e) = set_iopriority(args.container.config()) {
-	debug!("set_iopriority {:?}", e);
+        debug!("set_iopriority {:?}", e);
         exit(1);
     }
 
     if let Err(e) = detect_cgroup_version(args.ctx.cgroups_root()) {
-	debug!("detect_cgroup_version {:?}", e);
+        debug!("detect_cgroup_version {:?}", e);
         exit(1);
     }
 

@@ -35,7 +35,7 @@ impl State {
     }
 
     pub fn set_pid(&mut self, pid: Pid) {
-	self.pid = pid;
+        self.pid = pid;
     }
 }
 
