@@ -1,10 +1,9 @@
-pub mod cmd;
-pub mod error;
-
 mod cgroup;
+pub mod cmd;
 mod config;
 mod container;
 mod ctx;
+pub mod error;
 mod init;
 mod ioprio;
 mod namespaces;

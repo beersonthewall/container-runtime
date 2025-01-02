@@ -1,14 +1,12 @@
 //! Settings/Context for the container runtime itself.
 
+use crate::error::ContainerErr;
+use log::debug;
 use std::{
     fs,
     io::ErrorKind,
     path::{Path, PathBuf},
 };
-
-use log::debug;
-
-use crate::error::ContainerErr;
 
 pub const STATE_FILENAME: &'static str = "state.json";
 const BASE_DIR: &'static str = "/run/generic_brand_container_runtime";

@@ -1,7 +1,6 @@
+use crate::{config::Config, error::ContainerErr};
 use libc::{c_int, syscall, SYS_ioprio_set, __errno_location};
 use log::debug;
-
-use crate::{config::Config, error::ContainerErr};
 
 /// syscall ioprio_set
 pub fn set_iopriority(config: &Config) -> Result<(), ContainerErr> {

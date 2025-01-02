@@ -1,14 +1,12 @@
 //! namespaces
 
-use std::{fs::File, os::fd::AsRawFd};
-
+use crate::{config::Namespace, error::ContainerErr};
 use libc::{
     c_int, setns, CLONE_NEWCGROUP, CLONE_NEWIPC, CLONE_NEWNET, CLONE_NEWNS, CLONE_NEWPID,
     CLONE_NEWTIME, CLONE_NEWUSER, CLONE_NEWUTS,
 };
 use log::debug;
-
-use crate::{config::Namespace, error::ContainerErr};
+use std::{fs::File, os::fd::AsRawFd};
 
 /// returns the clone flags for any namespaces that need to be created
 pub fn clone_namespace_flags(namespaces: &[Namespace]) -> c_int {

@@ -1,3 +1,7 @@
+use crate::{
+    config::{Config, RLimit},
+    error::ContainerErr,
+};
 use libc::{
     __errno_location, __rlimit_resource_t, c_int, getrlimit, rlimit, setrlimit, RLIMIT_AS,
     RLIMIT_CORE, RLIMIT_CPU, RLIMIT_DATA, RLIMIT_FSIZE, RLIMIT_LOCKS, RLIMIT_MEMLOCK,
@@ -5,11 +9,6 @@ use libc::{
     RLIMIT_RTTIME, RLIMIT_SIGPENDING, RLIMIT_STACK,
 };
 use log::debug;
-
-use crate::{
-    config::{Config, RLimit},
-    error::ContainerErr,
-};
 
 /// Sets process rlimits. See [getrlimit](https://pubs.opengroup.org/onlinepubs/9699919799/functions/getrlimit.html) for details.
 pub fn set_rlimits(config: &Config) -> Result<(), ContainerErr> {
