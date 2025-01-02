@@ -20,5 +20,6 @@ fn main() -> Result<(), ContainerErr> {
         } => kill(container_id, signal)?,
         Command::Delete { container_id } => delete(container_id)?,
     }
+    log::logger().flush();
     Ok(())
 }
