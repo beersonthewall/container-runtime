@@ -1,3 +1,5 @@
+#![feature(anonymous_pipe)]
+
 mod cgroup;
 pub mod cmd;
 mod config;

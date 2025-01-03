@@ -8,13 +8,14 @@ use crate::error::ContainerErr;
 use crate::init::{init, InitArgs};
 use crate::namespaces::{clone_namespace_flags, namespaces_to_join};
 use crate::process::clone3;
-use libc::{__errno_location, c_int, mkfifo, pipe2, read, EINTR, O_CLOEXEC};
+use libc::{__errno_location, c_int, mkfifo, read, EINTR};
 use log::debug;
 use std::ffi::{c_void, CString};
 use std::fs::OpenOptions;
-use std::io::Write;
+use std::io::{ErrorKind, Read};
 use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
+use std::pipe::{PipeReader, PipeWriter};
 
 /// Creates a new container from the OCI bundle located at bundle_path
 pub fn create(container_id: String, bundle_path: String) -> Result<(), ContainerErr> {
@@ -34,14 +35,14 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
 
     // Create container ready pipe. This is used for the container process to notify us
     // when it's ready to execute.
-    let (rdy_pipe_read_fd, rdy_pipe_write_fd) = pipe()?;
+    let (rdy_pipe_reader, rdy_pipe_writer) = std::pipe::pipe().map_err(|e| ContainerErr::IO(e))?;
 
     // Create FIFO used by container process to block until we send a signal to exec
     // the entrypoint process.
     let fifo_path = ctx.state_dir.join(&container_id).join("exec_fifo");
     fifo(&fifo_path)?;
 
-    init_container_proc(fifo_path, rdy_pipe_read_fd, rdy_pipe_write_fd, c, ctx)?;
+    init_container_proc(fifo_path, rdy_pipe_reader, rdy_pipe_writer, c, ctx)?;
 
     Ok(())
 }
@@ -59,6 +60,7 @@ fn fifo<P: AsRef<Path>>(path: P) -> Result<(), ContainerErr> {
     };
 
     debug!("path: {}", path);
+
     let path =
         CString::new(path).map_err(|_| ContainerErr::Fifo(String::from("Invalid FIFO path")))?;
     let err = unsafe { mkfifo(path.as_c_str().as_ptr(), 0o622) };
@@ -72,26 +74,11 @@ fn fifo<P: AsRef<Path>>(path: P) -> Result<(), ContainerErr> {
     Ok(())
 }
 
-/// Creates a pipe, on success returning a tuple (readfd, writefd)
-fn pipe() -> Result<(c_int, c_int), ContainerErr> {
-    let mut fd: [c_int; 2] = [0, 0];
-    let flags = O_CLOEXEC;
-    let err = unsafe { pipe2(fd.as_mut_ptr(), flags) };
-    if err < 0 {
-        return Err(ContainerErr::Pipe(format!(
-            "Failed to create pipe err code: {}",
-            err
-        )));
-    }
-
-    Ok((fd[0], fd[1]))
-}
-
 /// Clones container child process
 fn init_container_proc(
     fifo_path: PathBuf,
-    rdy_pipe_read_fd: c_int,
-    rdy_pipe_write_fd: c_int,
+    rdy_pipe_reader: PipeReader,
+    rdy_pipe_writer: PipeWriter,
     container: Container,
     ctx: Ctx,
 ) -> Result<(), ContainerErr> {
@@ -113,9 +100,9 @@ fn init_container_proc(
     let cgroup_path = ctx.cgroups_root().join(container.state().id());
     create_cgroup(&cgroup_path, container.config())?;
 
-    let mut init_args = InitArgs {
+    let init_args = InitArgs {
         fifo_path: fifo_path.clone(),
-        rdy_pipe_write_fd,
+        rdy_pipe_write_fd: rdy_pipe_writer.as_raw_fd(),
         container,
         ctx,
         join_ns,
@@ -130,26 +117,14 @@ fn init_container_proc(
     let pid = clone3(flags, cgroup_file.as_raw_fd())?;
     debug!("PID: {}", pid);
     if pid == 0 {
-        // child process'
-        let mut f = OpenOptions::new()
-            .create(true)
-            .truncate(true)
-            .write(true)
-            .open("/tmp/output")
-            .unwrap();
-        f.write_all(b"child is alive...").unwrap();
-        f.flush().unwrap();
+        // child process
         let err = init(init_args);
         if err != 0 {
-            f.write_all(b"ded").unwrap();
-            f.flush().unwrap();
             return Err(ContainerErr::Child(format!(
                 "child process crashed exit code {}",
                 err
             )));
         } else {
-            f.write_all(b"child is done successfully...").unwrap();
-            f.flush().unwrap();
             return Ok(());
         }
     } else {
@@ -157,9 +132,10 @@ fn init_container_proc(
         // Read child process ready status
         let mut ret: c_int = 0;
         debug!("waiting for container ready status... {}", pid);
+
         unsafe {
             while read(
-                rdy_pipe_read_fd,
+                rdy_pipe_reader.as_raw_fd(),
                 &raw mut ret as *mut c_void,
                 size_of_val(&ret),
             ) == -1
@@ -173,4 +149,21 @@ fn init_container_proc(
 
         return Ok(());
     }
+}
+
+/// Reads from a pipe and retries interrupted reads until sucessful or encounters
+/// another error.
+fn read_pipe_retry_temp_fail<P: AsRef<Path>>(pipe: P) -> Result<Vec<u8>, std::io::Error> {
+    let mut f = OpenOptions::new()
+        .read(true)
+        .open(pipe)?;
+    let mut buffer = Vec::new();
+
+    while let Err(e) = f.read(&mut buffer) {
+	if e.kind() != ErrorKind::Interrupted {
+	    return Err(e);
+	}
+    }
+
+    Ok(buffer)
 }
