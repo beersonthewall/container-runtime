@@ -3,12 +3,8 @@
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
 use std::process::exit;
-use std::ptr::addr_of;
-
 use libc::{__errno_location, c_int, c_void, write, EINTR};
 use log::debug;
-
-use crate::cgroup::{create_cgroup, detect_cgroup_version, join_cgroup};
 use crate::config::Namespace;
 use crate::container::Container;
 use crate::ctx::Ctx;
@@ -47,11 +43,6 @@ pub extern "C" fn init(mut args: InitArgs) -> c_int {
 
     if let Err(e) = set_iopriority(args.container.config()) {
         debug!("set_iopriority {:?}", e);
-        exit(1);
-    }
-
-    if let Err(e) = detect_cgroup_version(args.ctx.cgroups_root()) {
-        debug!("detect_cgroup_version {:?}", e);
         exit(1);
     }
 

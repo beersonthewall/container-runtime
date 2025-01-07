@@ -1,6 +1,6 @@
 //! Create cmd
 
-use crate::cgroup::create_cgroup;
+use crate::cgroup::{create_cgroup, detect_cgroup_version};
 use crate::config::Config;
 use crate::container::Container;
 use crate::ctx::{setup_ctx, Ctx};
@@ -17,6 +17,7 @@ use std::io::{ErrorKind, Read};
 use std::os::fd::AsRawFd;
 use std::path::{Path, PathBuf};
 use std::pipe::{PipeReader, PipeWriter};
+use std::process::exit;
 
 /// Creates a new container from the OCI bundle located at bundle_path
 pub fn create(container_id: String, bundle_path: String) -> Result<(), ContainerErr> {
@@ -101,6 +102,11 @@ fn init_container_proc(
     // for clone3 to join the group. If we create the process and only then create/join the
     // cgroup the child is automatically a part of the parent process' cgroup and we'd need
     // to handle migrating the child process to the new cgroup. Which is annoying :/
+    
+    if let Err(e) = detect_cgroup_version(ctx.cgroups_root()) {
+        debug!("detect_cgroup_version {:?}", e);
+        exit(1);
+    }
     let cgroup_path = ctx.cgroups_root().join(container.state().id());
     create_cgroup(&cgroup_path, container.config())?;
 
