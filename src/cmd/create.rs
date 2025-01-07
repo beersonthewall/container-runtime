@@ -8,6 +8,7 @@ use crate::error::ContainerErr;
 use crate::init::{init, InitArgs};
 use crate::namespaces::{clone_namespace_flags, namespaces_to_join};
 use crate::process::clone3;
+use crate::state::Status;
 use libc::{__errno_location, c_int, mkfifo, read, EINTR};
 use log::debug;
 use std::ffi::{c_void, CString};
@@ -23,7 +24,7 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
     let config = Config::load(&bundle_path)?;
     let ctx = setup_ctx()?;
 
-    let c = Container::new(container_id.clone(), bundle_path, config);
+    let mut c = Container::new(container_id.clone(), bundle_path, config);
     if c.exists(&ctx) {
         return Err(ContainerErr::State(format!(
             "Container: {} already exists.",
@@ -42,7 +43,10 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
     let fifo_path = ctx.state_dir.join(&container_id).join("exec_fifo");
     fifo(&fifo_path)?;
 
-    init_container_proc(fifo_path, rdy_pipe_reader, rdy_pipe_writer, c, ctx)?;
+    init_container_proc(fifo_path, rdy_pipe_reader, rdy_pipe_writer, c.clone(), ctx.clone())?;
+
+    c.update_status(Status::Created);
+    c.write_state(&ctx)?;
 
     Ok(())
 }

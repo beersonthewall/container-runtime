@@ -8,7 +8,7 @@ use std::path::{Path, PathBuf};
 
 /// A container's config.json
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct Config {
@@ -149,7 +149,7 @@ impl Config {
 
 /// Root configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#root
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct Root {
     pub path: String,
@@ -158,7 +158,7 @@ pub struct Root {
 
 /// Mount configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#mounts
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct Mount {
     destination: String,
@@ -168,7 +168,7 @@ struct Mount {
 
 /// Process configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#mounts
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct Process {
@@ -198,7 +198,7 @@ pub struct Process {
 
 /// POSIX process resource limit
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-process
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct RLimit {
     #[serde(rename = "type")]
@@ -208,7 +208,7 @@ pub struct RLimit {
 }
 
 /// Console Size configuration
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct ConsoleSize {
     height: usize,
@@ -217,7 +217,7 @@ struct ConsoleSize {
 
 /// A Process' user configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#user
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 struct User {
@@ -231,7 +231,7 @@ struct User {
 
 // Linux platform specific configuration
 // https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#linux-container-configuration
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 struct Linux {
@@ -245,7 +245,7 @@ struct Linux {
 
 /// Linux process configuration for the scheduler
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct LinuxScheduler {
     policy: String,
@@ -259,7 +259,7 @@ struct LinuxScheduler {
 
 /// Linux process exec CPU affinity
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct ExecCPUAffinity {
     initial: Option<String>,
@@ -269,7 +269,7 @@ struct ExecCPUAffinity {
 
 /// Linux process IO priority configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#linux-process
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct LinuxIOPriority {
     pub class: String,
@@ -278,7 +278,7 @@ pub struct LinuxIOPriority {
 
 /// Linux Namespace configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#namespaces
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct Namespace {
     // TODO: make this an enum?
@@ -289,7 +289,7 @@ pub struct Namespace {
 
 /// User namespace mappings
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#user-namespace-mappings
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 struct UidMapping {
@@ -304,7 +304,7 @@ struct UidMapping {
 
 /// Offset for Time Namespace
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#offset-for-time-namespace
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct TimeOffsets {
     secs: i64,
@@ -313,7 +313,7 @@ struct TimeOffsets {
 
 /// Linux device configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#devices
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 struct Device {
@@ -331,7 +331,7 @@ struct Device {
 
 /// POSIX platform hooks
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct Hooks {
     prestart: Option<Vec<Hook>>,
@@ -344,7 +344,7 @@ struct Hooks {
 
 /// A single Hook configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#posix-platform-hooks
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct Hook {
     path: String,
@@ -355,7 +355,7 @@ struct Hook {
 
 /// Cgroup resource configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#cgroup-ownership
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct Resources {
     memory: Option<Memory>,
@@ -373,7 +373,7 @@ struct Resources {
 
 /// cgroup subsystem memory
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#memory
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct Memory {
     pub limit: Option<i64>,
@@ -391,7 +391,7 @@ pub struct Memory {
 
 /// cgroup allowed devices
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#allowed-device-list
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct AllowedDevice {
     allow: bool,
@@ -402,7 +402,7 @@ struct AllowedDevice {
     access: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 enum DeviceType {
     #[serde(rename = "a")]
     All,
@@ -414,7 +414,7 @@ enum DeviceType {
 
 /// cgroup subsystems cpu and cpusets
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#cpu
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct Cpu {
     pub shares: Option<i64>,
@@ -428,7 +428,7 @@ pub struct Cpu {
     pub idle: Option<i64>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct BlockIO {
@@ -443,7 +443,7 @@ pub struct BlockIO {
     pub throttle_write_iops_device: Option<Vec<DevThrottle>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct WeightDevice {
@@ -453,7 +453,7 @@ pub struct WeightDevice {
     pub leaf_weight: Option<u16>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct DevThrottle {
     pub major: i64,
@@ -461,7 +461,7 @@ pub struct DevThrottle {
     pub rate: u64,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct HugePageLimits {
@@ -471,14 +471,14 @@ pub struct HugePageLimits {
 
 /// cgroup subsystem network
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#network
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct Network {
     class_id: Option<u32>,
     priorities: Option<Vec<Prio>>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 struct Prio {
     name: String,
@@ -487,7 +487,7 @@ struct Prio {
 
 /// cgroup subsystem pids
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#pids
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct Pids {
     pub limit: i64,
@@ -495,7 +495,7 @@ pub struct Pids {
 
 /// cgroup subsystem rdma
 /// https://github.com/opencontainers/runtime-spec/blob/main/config-linux.md#rdma
-#[derive(Deserialize, Debug)]
+#[derive(Clone, Deserialize, Debug)]
 #[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct Rdma {

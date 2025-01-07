@@ -6,7 +6,7 @@ pub type Pid = u32;
 
 /// Container state
 /// https://github.com/opencontainers/runtime-spec/blob/main/schema/state-schema.json
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct State {
     oci_version: String,
@@ -30,6 +30,10 @@ impl State {
         }
     }
 
+    pub fn update_status(&mut self, status: Status) {
+	self.status = status;
+    }
+
     pub fn id(&self) -> &str {
         &self.container_id
     }
@@ -39,8 +43,8 @@ impl State {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-enum Status {
+#[derive(Clone, Serialize, Deserialize)]
+pub enum Status {
     #[serde(rename = "creating")]
     Creating,
     #[serde(rename = "created")]

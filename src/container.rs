@@ -1,3 +1,5 @@
+use crate::state::Status;
+
 use super::config::Config;
 use super::ctx::Ctx;
 use super::error::ContainerErr;
@@ -6,6 +8,7 @@ use std::fs::{self, OpenOptions};
 use std::io::Write;
 use std::path::PathBuf;
 
+#[derive(Clone)]
 pub struct Container {
     state: State,
     config: Config,
@@ -21,6 +24,10 @@ impl Container {
 
     pub fn state(&self) -> &State {
         &self.state
+    }
+
+    pub fn update_status(&mut self, status: Status) {
+	self.state.update_status(status);
     }
 
     pub fn state_mut(&mut self) -> &mut State {

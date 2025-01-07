@@ -12,6 +12,7 @@ pub const STATE_FILENAME: &'static str = "state.json";
 const BASE_DIR: &'static str = "/run/generic_brand_container_runtime";
 
 /// Container runtime settings
+#[derive(Clone)]
 pub struct Ctx {
     pub state_dir: PathBuf,
     cgroups_root: PathBuf,
