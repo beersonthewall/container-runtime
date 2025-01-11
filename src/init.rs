@@ -5,6 +5,7 @@ use crate::container::Container;
 use crate::ctx::Ctx;
 use crate::error::ContainerErr;
 use crate::ioprio::set_iopriority;
+use crate::mount::setup_mounts;
 use crate::namespaces::join_namspaces;
 use crate::process::{clear_env, populate_env};
 use crate::rlimit::set_rlimits;
@@ -50,6 +51,11 @@ pub fn init(mut args: InitArgs) -> c_int {
 
     if let Err(e) = setup_rootfs(args.container.config(), args.bundle_path) {
         debug!("setup_rootfs {:?}", e);
+        exit(1);
+    }
+
+    if let Err(e) = setup_mounts(args.container.config()) {
+        debug!("setup_mounts {:?}", e);
         exit(1);
     }
 

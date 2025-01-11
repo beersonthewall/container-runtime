@@ -128,6 +128,13 @@ impl Config {
         None
     }
 
+    pub fn mounts(&self) -> Option<&[Mount]> {
+	if let Some(mounts) = &self.mounts {
+	    return Some(mounts);
+	}
+	None
+    }
+
     pub fn cgroups_path(&self) -> Option<&str> {
         if let Some(linux) = &self.linux {
             if let Some(path) = &linux.cgroups_path {
@@ -160,10 +167,10 @@ pub struct Root {
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#mounts
 #[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
-struct Mount {
-    destination: String,
-    source: Option<String>,
-    options: Option<Vec<String>>,
+pub struct Mount {
+    pub destination: String,
+    pub source: Option<String>,
+    pub options: Option<Vec<String>>,
 }
 
 /// Process configuration

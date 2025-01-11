@@ -1,9 +1,6 @@
-use crate::ctx::Ctx;
 use crate::{config::Config, error::ContainerErr};
-use libc::{__errno_location, c_ulong};
-use std::ffi::{c_void, CStr};
-use std::os::unix::ffi::OsStrExt;
-use std::{ffi::CString, fs, path::Path};
+use crate::mount::mount;
+use std::{fs, path::Path};
 
 /// Mounts the root filesystem for a container.
 pub fn setup_rootfs<P: AsRef<Path>>(config: &Config, bundle_path: P) -> Result<(), ContainerErr> {
@@ -37,40 +34,5 @@ pub fn setup_rootfs<P: AsRef<Path>>(config: &Config, bundle_path: P) -> Result<(
     mount(&config.root.path, &config.root.path, c"bind", mount_flags)
         .map_err(|e| ContainerErr::RootFs(format!("failed to mount rootfs: {:?}", e)))?;
 
-    Ok(())
-}
-
-#[derive(Debug)]
-pub enum MountErr {
-    InvalidPath(String),
-    Generic(String),
-}
-
-pub fn mount<S: AsRef<Path>, T: AsRef<Path>>(
-    src: S,
-    target: T,
-    fstype: &CStr,
-    flags: c_ulong,
-) -> Result<(), MountErr> {
-    let src = CString::new(src.as_ref().as_os_str().as_bytes())
-        .map_err(|e| MountErr::InvalidPath(format!("{:?}", e)))?;
-    let target = CString::new(target.as_ref().as_os_str().as_bytes())
-        .map_err(|e| MountErr::InvalidPath(format!("{:?}", e)))?;
-    let err = unsafe {
-        libc::mount(
-            src.as_ptr(),
-            target.as_ptr(),
-            fstype.as_ptr(),
-            flags,
-            std::ptr::null() as *const c_void,
-        )
-    };
-    if err > 0 {
-        return Err(MountErr::Generic(format!(
-            "exit code: {}, errno {}",
-            err,
-            unsafe { *__errno_location() }
-        )));
-    }
     Ok(())
 }

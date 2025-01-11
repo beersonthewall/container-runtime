@@ -1,3 +1,5 @@
+use crate::mount::MountErr;
+
 #[derive(Debug)]
 pub enum ContainerErr {
     Args(String),
@@ -15,6 +17,7 @@ pub enum ContainerErr {
     JoinNamespace(String),
     Clone(String),
     RootFs(String),
+    Mount(MountErr),
 }
 
 impl ContainerErr {
