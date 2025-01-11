@@ -14,6 +14,7 @@ pub enum ContainerErr {
     InvalidNamespace(String),
     JoinNamespace(String),
     Clone(String),
+    RootFs(String),
 }
 
 impl ContainerErr {

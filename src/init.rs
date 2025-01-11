@@ -1,21 +1,23 @@
 //! Code for the initial process which runs inside a container.
 
-use std::fs::OpenOptions;
-use std::path::{Path, PathBuf};
-use std::process::exit;
-use libc::{__errno_location, c_int, c_void, write, EINTR};
-use log::debug;
 use crate::config::Namespace;
 use crate::container::Container;
 use crate::ctx::Ctx;
+use crate::error::ContainerErr;
 use crate::ioprio::set_iopriority;
 use crate::namespaces::join_namspaces;
 use crate::process::{clear_env, populate_env};
 use crate::rlimit::set_rlimits;
 use crate::rootfs::setup_rootfs;
+use libc::{__errno_location, c_int, c_void, write, EINTR};
+use log::debug;
+use std::fs::OpenOptions;
+use std::path::{Path, PathBuf};
+use std::process::exit;
 
 /// Init arguments
 pub struct InitArgs {
+    pub bundle_path: PathBuf,
     pub fifo_path: PathBuf,
     pub rdy_pipe_write_fd: c_int,
     pub container: Container,
@@ -24,7 +26,7 @@ pub struct InitArgs {
 }
 
 /// First thing that runs in a new container process.
-pub extern "C" fn init(mut args: InitArgs) -> c_int {
+pub fn init(mut args: InitArgs) -> c_int {
     let pid = std::process::id();
     args.container.state_mut().set_pid(pid);
 
@@ -46,7 +48,7 @@ pub extern "C" fn init(mut args: InitArgs) -> c_int {
         exit(1);
     }
 
-    if let Err(e) = setup_rootfs(args.container.config()) {
+    if let Err(e) = setup_rootfs(args.container.config(), args.bundle_path) {
         debug!("setup_rootfs {:?}", e);
         exit(1);
     }
@@ -58,7 +60,10 @@ pub extern "C" fn init(mut args: InitArgs) -> c_int {
     // sent. Opening the fifo is the signal.
     wait_for_exec(&args.fifo_path);
 
-    // TODO: exec, for now write logs to a file.
+    if let Err(e) = exec(args.container) {
+	debug!("exec error {:?}", e);
+	exit(1);
+    }
     debug!("container successfully created");
 
     0
@@ -77,6 +82,11 @@ fn notify_container_ready(fd: c_int) {
             }
         }
     }
+}
+
+/// Won't return on success.
+fn exec(container: Container) -> Result<(), ContainerErr> {
+    Ok(())
 }
 
 fn wait_for_exec<P: AsRef<Path>>(fifo: P) {

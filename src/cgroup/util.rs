@@ -18,10 +18,9 @@ use std::path::Path;
 pub fn read_flat_keyed_file<P: AsRef<Path>>(
     path: P,
 ) -> Result<HashMap<String, String>, ContainerErr> {
-    let mut f = File::open(path).map_err(|e| ContainerErr::IO(e))?;
+    let mut f = File::open(path).map_err(ContainerErr::IO)?;
     let mut buf = String::new();
-    f.read_to_string(&mut buf)
-        .map_err(|e| ContainerErr::IO(e))?;
+    f.read_to_string(&mut buf).map_err(ContainerErr::IO)?;
 
     let mut data = HashMap::new();
 
@@ -42,10 +41,9 @@ pub fn read_flat_keyed_file<P: AsRef<Path>>(
 /// VAL0 VAL1 ...\n
 ///
 pub fn read_space_separated_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, ContainerErr> {
-    let mut f = File::open(path).map_err(|e| ContainerErr::IO(e))?;
+    let mut f = File::open(path).map_err(ContainerErr::IO)?;
     let mut buf = String::new();
-    f.read_to_string(&mut buf)
-        .map_err(|e| ContainerErr::IO(e))?;
+    f.read_to_string(&mut buf).map_err(ContainerErr::IO)?;
 
     let slices: Vec<&str> = buf.split(" ").collect();
     let mut result = Vec::with_capacity(slices.len());
@@ -67,11 +65,11 @@ pub fn read_space_separated_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>,
 pub fn read_newline_separated_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, ContainerErr> {
     let mut data = Vec::new();
 
-    let f = File::open(path).map_err(|e| ContainerErr::IO(e))?;
+    let f = File::open(path).map_err(ContainerErr::IO)?;
     let reader = BufReader::new(f);
 
     for line in reader.lines() {
-        let line = line.map_err(|e| ContainerErr::IO(e))?;
+        let line = line.map_err(ContainerErr::IO)?;
         data.push(line);
     }
 

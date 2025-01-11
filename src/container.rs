@@ -27,7 +27,7 @@ impl Container {
     }
 
     pub fn update_status(&mut self, status: Status) {
-	self.state.update_status(status);
+        self.state.update_status(status);
     }
 
     pub fn state_mut(&mut self) -> &mut State {

@@ -13,7 +13,7 @@ use std::path::{Path, PathBuf};
 #[repr(C)]
 pub struct Config {
     pub oci_version: String,
-    root: Root,
+    pub root: Root,
     mounts: Option<Vec<Mount>>,
     process: Process,
 

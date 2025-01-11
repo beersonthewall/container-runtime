@@ -31,7 +31,7 @@ impl State {
     }
 
     pub fn update_status(&mut self, status: Status) {
-	self.status = status;
+        self.status = status;
     }
 
     pub fn id(&self) -> &str {

@@ -25,7 +25,7 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
     let config = Config::load(&bundle_path)?;
     let ctx = setup_ctx()?;
 
-    let mut c = Container::new(container_id.clone(), bundle_path, config);
+    let mut c = Container::new(container_id.clone(), bundle_path.clone(), config);
     if c.exists(&ctx) {
         return Err(ContainerErr::State(format!(
             "Container: {} already exists.",
@@ -44,7 +44,14 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
     let fifo_path = ctx.state_dir.join(&container_id).join("exec_fifo");
     fifo(&fifo_path)?;
 
-    init_container_proc(fifo_path, rdy_pipe_reader, rdy_pipe_writer, c.clone(), ctx.clone())?;
+    init_container_proc(
+        fifo_path,
+        rdy_pipe_reader,
+        rdy_pipe_writer,
+        c.clone(),
+        ctx.clone(),
+	bundle_path,
+    )?;
 
     c.update_status(Status::Created);
     c.write_state(&ctx)?;
@@ -86,6 +93,7 @@ fn init_container_proc(
     rdy_pipe_writer: PipeWriter,
     container: Container,
     ctx: Ctx,
+    bundle_path: PathBuf,
 ) -> Result<(), ContainerErr> {
     let mut flags = 0;
     if let Some(ns) = &container.config().linux_namespaces() {
@@ -102,7 +110,7 @@ fn init_container_proc(
     // for clone3 to join the group. If we create the process and only then create/join the
     // cgroup the child is automatically a part of the parent process' cgroup and we'd need
     // to handle migrating the child process to the new cgroup. Which is annoying :/
-    
+
     if let Err(e) = detect_cgroup_version(ctx.cgroups_root()) {
         debug!("detect_cgroup_version {:?}", e);
         exit(1);
@@ -111,6 +119,7 @@ fn init_container_proc(
     create_cgroup(&cgroup_path, container.config())?;
 
     let init_args = InitArgs {
+	bundle_path,
         fifo_path: fifo_path.clone(),
         rdy_pipe_write_fd: rdy_pipe_writer.as_raw_fd(),
         container,
@@ -164,15 +173,13 @@ fn init_container_proc(
 /// Reads from a pipe and retries interrupted reads until sucessful or encounters
 /// another error.
 fn read_pipe_retry_temp_fail<P: AsRef<Path>>(pipe: P) -> Result<Vec<u8>, std::io::Error> {
-    let mut f = OpenOptions::new()
-        .read(true)
-        .open(pipe)?;
+    let mut f = OpenOptions::new().read(true).open(pipe)?;
     let mut buffer = Vec::new();
 
     while let Err(e) = f.read(&mut buffer) {
-	if e.kind() != ErrorKind::Interrupted {
-	    return Err(e);
-	}
+        if e.kind() != ErrorKind::Interrupted {
+            return Err(e);
+        }
     }
 
     Ok(buffer)
