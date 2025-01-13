@@ -53,14 +53,12 @@ pub fn join_cgroup<P: AsRef<Path>>(cgroup: P) -> Result<(), ContainerErr> {
     debug!("proc file {:?}", proc_file);
     let mut f = OpenOptions::new()
         .create(true)
-        
         .append(true)
         .open(proc_file)
         .map_err(ContainerErr::IO)?;
 
     let id = std::process::id().to_string();
-    f.write_all(id.as_bytes())
-        .map_err(ContainerErr::IO)?;
+    f.write_all(id.as_bytes()).map_err(ContainerErr::IO)?;
     debug!("done");
 
     Ok(())

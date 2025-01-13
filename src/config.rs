@@ -172,7 +172,7 @@ pub struct Mount {
     pub destination: String,
     pub source: Option<String>,
     pub options: Option<Vec<String>>,
-    #[serde(rename="type")]
+    #[serde(rename = "type")]
     pub typ: Option<String>,
     pub uid_mappings: Option<Vec<String>>,
     pub gid_mappings: Option<Vec<String>>,
