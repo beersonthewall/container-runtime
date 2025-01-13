@@ -50,7 +50,7 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
         rdy_pipe_writer,
         c.clone(),
         ctx.clone(),
-	bundle_path,
+        bundle_path,
     )?;
 
     c.update_status(Status::Created);
@@ -119,7 +119,7 @@ fn init_container_proc(
     create_cgroup(&cgroup_path, container.config())?;
 
     let init_args = InitArgs {
-	bundle_path,
+        bundle_path,
         fifo_path: fifo_path.clone(),
         rdy_pipe_write_fd: rdy_pipe_writer.as_raw_fd(),
         container,

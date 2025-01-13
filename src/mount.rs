@@ -1,25 +1,39 @@
 use crate::{config::Config, error::ContainerErr};
-use libc::{__errno_location, c_int, c_ulong, MS_ASYNC, MS_BIND, MS_DIRSYNC, MS_I_VERSION, MS_KERNMOUNT, MS_LAZYTIME, MS_MANDLOCK, MS_MOVE, MS_NOATIME, MS_NODEV, MS_NODIRATIME, MS_NOEXEC, MS_NOSUID, MS_NOUSER, MS_PRIVATE, MS_RDONLY, MS_REC, MS_RELATIME, MS_REMOUNT, MS_SHARED, MS_SILENT, MS_SLAVE, MS_STRICTATIME, MS_SYNC, MS_SYNCHRONOUS, MS_UNBINDABLE };
-
+use libc::{
+    __errno_location, c_int, c_ulong, MS_ASYNC, MS_BIND, MS_DIRSYNC, MS_I_VERSION, MS_KERNMOUNT,
+    MS_LAZYTIME, MS_MANDLOCK, MS_MOVE, MS_NOATIME, MS_NODEV, MS_NODIRATIME, MS_NOEXEC, MS_NOSUID,
+    MS_NOUSER, MS_PRIVATE, MS_RDONLY, MS_REC, MS_RELATIME, MS_REMOUNT, MS_SHARED, MS_SILENT,
+    MS_SLAVE, MS_STRICTATIME, MS_SYNC, MS_SYNCHRONOUS, MS_UNBINDABLE,
+};
+use log::info;
 use std::ffi::{c_void, CStr};
 use std::os::unix::ffi::OsStrExt;
 use std::{ffi::CString, path::Path};
 
 pub fn setup_mounts(config: &Config) -> Result<(), ContainerErr> {
     if let Some(mounts) = config.mounts() {
-	for mnt in mounts {
-	    let mut flags = 0;
-	    if let Some(opts) = &mnt.options {
-		flags |= parse_mount_options(&opts);
-	    }
-	    let src = if let Some(src) = &mnt.source {
-		src
-	    } else {
-		""
-	    };
+        for mnt in mounts {
+            let mut flags = 0;
+            let mut fs_opts = Vec::<String>::new();
+            let src = if let Some(src) = &mnt.source { src } else { "" };
 
-	    mount(&src, &mnt.destination, c"", flags).map_err(ContainerErr::Mount)?;
-	}
+            if let Some(opts) = &mnt.options {
+                flags |= parse_mount_options(&opts, &mut fs_opts);
+            }
+
+            let fs_opts = CString::new(fs_opts.join(",")).map_err(|e| {
+                ContainerErr::Options(format!("could not convert options to cstring: {}", e))
+            })?;
+
+            mount(
+                &src,
+                &mnt.destination,
+                c"",
+                flags,
+                Some(fs_opts.as_ptr() as *const c_void),
+            )
+            .map_err(ContainerErr::Mount)?;
+        }
     }
     Ok(())
 }
@@ -35,20 +49,16 @@ pub fn mount<S: AsRef<Path>, T: AsRef<Path>>(
     target: T,
     fstype: &CStr,
     flags: c_ulong,
+    data: Option<*const c_void>,
 ) -> Result<(), MountErr> {
     let src = CString::new(src.as_ref().as_os_str().as_bytes())
         .map_err(|e| MountErr::InvalidPath(format!("{:?}", e)))?;
     let target = CString::new(target.as_ref().as_os_str().as_bytes())
         .map_err(|e| MountErr::InvalidPath(format!("{:?}", e)))?;
-    let err = unsafe {
-        libc::mount(
-            src.as_ptr(),
-            target.as_ptr(),
-            fstype.as_ptr(),
-            flags,
-            std::ptr::null() as *const c_void,
-        )
-    };
+
+    let ptr = data.unwrap_or(std::ptr::null() as *const c_void);
+
+    let err = unsafe { libc::mount(src.as_ptr(), target.as_ptr(), fstype.as_ptr(), flags, ptr) };
     if err > 0 {
         return Err(MountErr::Generic(format!(
             "exit code: {}, errno {}",
@@ -59,9 +69,11 @@ pub fn mount<S: AsRef<Path>, T: AsRef<Path>>(
     Ok(())
 }
 
-/// Turns mount options from the config into mount(2) flags
-fn parse_mount_options(options: &[String]) -> c_ulong {
+/// Converts mount options from the config into mount(2) flags &
+/// filesystem specific options.
+fn parse_mount_options(options: &[String], fs_opts: &mut Vec<String>) -> c_ulong {
     let mut flags: c_ulong = 0;
+
     for opt in options {
         match opt.as_str() {
             "async" => flags |= MS_ASYNC as c_ulong,
@@ -101,9 +113,9 @@ fn parse_mount_options(options: &[String]) -> c_ulong {
             "suid" => flags ^= MS_NOSUID,
             "sync" => flags |= MS_SYNCHRONOUS,
             "unbindable" => flags |= MS_UNBINDABLE,
-            _ => {},
+            o => fs_opts.push(o.to_string()),
         }
     }
+
     flags
 }
-

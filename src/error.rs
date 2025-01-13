@@ -18,6 +18,7 @@ pub enum ContainerErr {
     Clone(String),
     RootFs(String),
     Mount(MountErr),
+    Options(String),
 }
 
 impl ContainerErr {

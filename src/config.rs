@@ -129,10 +129,10 @@ impl Config {
     }
 
     pub fn mounts(&self) -> Option<&[Mount]> {
-	if let Some(mounts) = &self.mounts {
-	    return Some(mounts);
-	}
-	None
+        if let Some(mounts) = &self.mounts {
+            return Some(mounts);
+        }
+        None
     }
 
     pub fn cgroups_path(&self) -> Option<&str> {
@@ -165,12 +165,17 @@ pub struct Root {
 
 /// Mount configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#mounts
+#[serde(rename_all = "camelCase")]
 #[derive(Clone, Deserialize, Debug)]
 #[repr(C)]
 pub struct Mount {
     pub destination: String,
     pub source: Option<String>,
     pub options: Option<Vec<String>>,
+    #[serde(rename="type")]
+    pub typ: Option<String>,
+    pub uid_mappings: Option<Vec<String>>,
+    pub gid_mappings: Option<Vec<String>>,
 }
 
 /// Process configuration

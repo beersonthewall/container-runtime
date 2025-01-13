@@ -67,8 +67,8 @@ pub fn init(mut args: InitArgs) -> c_int {
     wait_for_exec(&args.fifo_path);
 
     if let Err(e) = exec(args.container) {
-	debug!("exec error {:?}", e);
-	exit(1);
+        debug!("exec error {:?}", e);
+        exit(1);
     }
     debug!("container successfully created");
 
