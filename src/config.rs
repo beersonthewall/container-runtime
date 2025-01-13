@@ -66,7 +66,7 @@ impl Config {
         if let Some(linux) = &self.linux {
             if let Some(resources) = &linux.resources {
                 if let Some(memory) = &resources.memory {
-                    return Some(&memory);
+                    return Some(memory);
                 }
             }
         }
@@ -77,7 +77,7 @@ impl Config {
         if let Some(linux) = &self.linux {
             if let Some(resources) = &linux.resources {
                 if let Some(cpu) = &resources.cpu {
-                    return Some(&cpu);
+                    return Some(cpu);
                 }
             }
         }
@@ -88,7 +88,7 @@ impl Config {
         if let Some(linux) = &self.linux {
             if let Some(resources) = &linux.resources {
                 if let Some(block_io) = &resources.block_io {
-                    return Some(&block_io);
+                    return Some(block_io);
                 }
             }
         }
@@ -99,7 +99,7 @@ impl Config {
         if let Some(linux) = &self.linux {
             if let Some(resources) = &linux.resources {
                 if let Some(hpl) = &resources.hugepage_limits {
-                    return Some(&hpl);
+                    return Some(hpl);
                 }
             }
         }
@@ -121,7 +121,7 @@ impl Config {
         if let Some(linux) = &self.linux {
             if let Some(resources) = &linux.resources {
                 if let Some(p) = &resources.pids {
-                    return Some(&p);
+                    return Some(p);
                 }
             }
         }
@@ -138,7 +138,7 @@ impl Config {
     pub fn cgroups_path(&self) -> Option<&str> {
         if let Some(linux) = &self.linux {
             if let Some(path) = &linux.cgroups_path {
-                return Some(&path);
+                return Some(path);
             }
         }
         None

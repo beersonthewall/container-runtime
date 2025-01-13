@@ -4,7 +4,7 @@
 mod util;
 
 use std::collections::HashMap;
-use std::fs::{self, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::os::unix::ffi::OsStrExt;
 use std::path::{Path, PathBuf};
@@ -53,14 +53,14 @@ pub fn join_cgroup<P: AsRef<Path>>(cgroup: P) -> Result<(), ContainerErr> {
     debug!("proc file {:?}", proc_file);
     let mut f = OpenOptions::new()
         .create(true)
-        .write(true)
+        
         .append(true)
         .open(proc_file)
-        .map_err(|e| ContainerErr::IO(e))?;
+        .map_err(ContainerErr::IO)?;
 
     let id = std::process::id().to_string();
     f.write_all(id.as_bytes())
-        .map_err(|e| ContainerErr::IO(e))?;
+        .map_err(ContainerErr::IO)?;
     debug!("done");
 
     Ok(())
@@ -70,7 +70,7 @@ pub fn join_cgroup<P: AsRef<Path>>(cgroup: P) -> Result<(), ContainerErr> {
 /// Assumes this directory does not exist and will Err if it does.
 pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<(), ContainerErr> {
     debug!("creating cgroup: {:?}", cgroup_path.as_ref());
-    std::fs::create_dir(&cgroup_path).map_err(|e| ContainerErr::IO(e))?;
+    std::fs::create_dir(&cgroup_path).map_err(ContainerErr::IO)?;
 
     // create the necessary files
     let filenames = ["cgroup.procs"];
@@ -78,7 +78,7 @@ pub fn create_cgroup<P: AsRef<Path>>(cgroup_path: P, config: &Config) -> Result<
         let mut pb = PathBuf::new();
         pb.push(&cgroup_path);
         pb.push(f);
-        let _ = File::create(pb).map_err(|e| ContainerErr::IO(e))?;
+        let _ = File::create(pb).map_err(ContainerErr::IO)?;
     }
 
     if let Some(memory) = config.cgroup_memory() {
@@ -143,7 +143,7 @@ pub fn resolve_cgroup_path<P: AsRef<Path>>(
 /// Write values from cgroup memory config into the appropriate files
 fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), ContainerErr> {
     debug!("cgroup memory");
-    let mut current = String::new();
+    let current = String::new();
     //File::read_to_string("memory.current", &current).map_err(|e| ContainerErr::IO(e))?;
 
     if let Some(val) = memory.limit {
@@ -273,9 +273,9 @@ fn set_cgroup_hugepage<P: AsRef<Path>>(
             .truncate(true)
             .write(true)
             .open(hp_path)
-            .map_err(|e| ContainerErr::IO(e))?;
+            .map_err(ContainerErr::IO)?;
         f.write_all(hp.limit.to_string().as_bytes())
-            .map_err(|e| ContainerErr::IO(e))?;
+            .map_err(ContainerErr::IO)?;
     }
     Ok(())
 }
@@ -314,11 +314,11 @@ fn set_cgroup_pids<P: AsRef<Path>>(cgroup: P, pids: &Pids) -> Result<(), Contain
         .truncate(true)
         .write(true)
         .open(cgroup.as_ref().join("pids.max"))
-        .map_err(|e| ContainerErr::IO(e))?;
+        .map_err(ContainerErr::IO)?;
 
     debug!("pids: {:?}", pids);
     f.write_all(pids.limit.to_string().as_bytes())
-        .map_err(|e| ContainerErr::IO(e))?;
+        .map_err(ContainerErr::IO)?;
     Ok(())
 }
 
@@ -328,8 +328,8 @@ fn write_to_cgroup_file<P: AsRef<Path>, F: AsRef<Path>>(
     filepath: F,
 ) -> Result<(), ContainerErr> {
     let mut f =
-        File::create(Path::new(cgroup.as_ref()).join(filepath)).map_err(|e| ContainerErr::IO(e))?;
-    f.write(bytes).map_err(|e| ContainerErr::IO(e))?;
+        File::create(Path::new(cgroup.as_ref()).join(filepath)).map_err(ContainerErr::IO)?;
+    f.write(bytes).map_err(ContainerErr::IO)?;
     Ok(())
 }
 

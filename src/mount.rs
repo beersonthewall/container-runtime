@@ -1,11 +1,9 @@
 use crate::{config::Config, error::ContainerErr};
 use libc::{
-    __errno_location, c_int, c_ulong, MS_ASYNC, MS_BIND, MS_DIRSYNC, MS_I_VERSION, MS_KERNMOUNT,
-    MS_LAZYTIME, MS_MANDLOCK, MS_MOVE, MS_NOATIME, MS_NODEV, MS_NODIRATIME, MS_NOEXEC, MS_NOSUID,
-    MS_NOUSER, MS_PRIVATE, MS_RDONLY, MS_REC, MS_RELATIME, MS_REMOUNT, MS_SHARED, MS_SILENT,
-    MS_SLAVE, MS_STRICTATIME, MS_SYNC, MS_SYNCHRONOUS, MS_UNBINDABLE,
+    __errno_location, c_ulong, MS_ASYNC, MS_BIND, MS_DIRSYNC, MS_I_VERSION,
+    MS_LAZYTIME, MS_NOATIME, MS_NODEV, MS_NODIRATIME, MS_NOEXEC, MS_NOSUID, MS_PRIVATE, MS_RDONLY, MS_REC, MS_RELATIME, MS_REMOUNT, MS_SHARED, MS_SILENT,
+    MS_SLAVE, MS_STRICTATIME, MS_SYNCHRONOUS, MS_UNBINDABLE,
 };
-use log::info;
 use std::ffi::{c_void, CStr};
 use std::os::unix::ffi::OsStrExt;
 use std::{ffi::CString, path::Path};
@@ -18,7 +16,7 @@ pub fn setup_mounts(config: &Config) -> Result<(), ContainerErr> {
             let src = if let Some(src) = &mnt.source { src } else { "" };
 
             if let Some(opts) = &mnt.options {
-                flags |= parse_mount_options(&opts, &mut fs_opts);
+                flags |= parse_mount_options(opts, &mut fs_opts);
             }
 
             let fs_opts = CString::new(fs_opts.join(",")).map_err(|e| {
@@ -26,7 +24,7 @@ pub fn setup_mounts(config: &Config) -> Result<(), ContainerErr> {
             })?;
 
             mount(
-                &src,
+                src,
                 &mnt.destination,
                 c"",
                 flags,

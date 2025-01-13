@@ -37,7 +37,7 @@ pub fn create(container_id: String, bundle_path: String) -> Result<(), Container
 
     // Create container ready pipe. This is used for the container process to notify us
     // when it's ready to execute.
-    let (rdy_pipe_reader, rdy_pipe_writer) = std::pipe::pipe().map_err(|e| ContainerErr::IO(e))?;
+    let (rdy_pipe_reader, rdy_pipe_writer) = std::pipe::pipe().map_err(ContainerErr::IO)?;
 
     // Create FIFO used by container process to block until we send a signal to exec
     // the entrypoint process.
@@ -132,19 +132,19 @@ fn init_container_proc(
     let cgroup_file = OpenOptions::new()
         .read(true)
         .open(&cgroup_path)
-        .map_err(|e| ContainerErr::IO(e))?;
+        .map_err(ContainerErr::IO)?;
     let pid = clone3(flags, cgroup_file.as_raw_fd())?;
     debug!("PID: {}", pid);
     if pid == 0 {
         // child process
         let err = init(init_args);
         if err != 0 {
-            return Err(ContainerErr::Child(format!(
+            Err(ContainerErr::Child(format!(
                 "child process crashed exit code {}",
                 err
-            )));
+            )))
         } else {
-            return Ok(());
+            Ok(())
         }
     } else {
         // parent
@@ -166,7 +166,7 @@ fn init_container_proc(
             return Err(ContainerErr::Init("Error initializing container process"));
         }
 
-        return Ok(());
+        Ok(())
     }
 }
 

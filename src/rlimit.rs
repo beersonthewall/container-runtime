@@ -3,7 +3,7 @@ use crate::{
     error::ContainerErr,
 };
 use libc::{
-    __errno_location, __rlimit_resource_t, c_int, getrlimit, rlimit, setrlimit, RLIMIT_AS,
+    __errno_location, __rlimit_resource_t, getrlimit, rlimit, setrlimit, RLIMIT_AS,
     RLIMIT_CORE, RLIMIT_CPU, RLIMIT_DATA, RLIMIT_FSIZE, RLIMIT_LOCKS, RLIMIT_MEMLOCK,
     RLIMIT_MSGQUEUE, RLIMIT_NICE, RLIMIT_NOFILE, RLIMIT_NPROC, RLIMIT_RSS, RLIMIT_RTPRIO,
     RLIMIT_RTTIME, RLIMIT_SIGPENDING, RLIMIT_STACK,

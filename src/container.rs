@@ -42,7 +42,7 @@ impl Container {
         let container_state_path = container_dir.join("state.json");
 
         if let Err(_) = fs::metadata(&container_dir) {
-            fs::create_dir(&container_dir).map_err(|e| ContainerErr::IO(e))?;
+            fs::create_dir(&container_dir).map_err(ContainerErr::IO)?;
         }
 
         let mut f = OpenOptions::new()
@@ -50,16 +50,16 @@ impl Container {
             .create(true)
             .write(true)
             .open(container_state_path)
-            .map_err(|e| ContainerErr::IO(e))?;
+            .map_err(ContainerErr::IO)?;
 
         f.write_all(raw_state.as_bytes())
-            .map_err(|e| ContainerErr::IO(e))?;
+            .map_err(ContainerErr::IO)?;
         Ok(())
     }
 
     /// Checks if the container state already exists on the filesystem
     pub fn exists(&self, ctx: &Ctx) -> bool {
-        fs::metadata(ctx.state_path_for(&self.state.id())).is_ok()
+        fs::metadata(ctx.state_path_for(self.state.id())).is_ok()
     }
 
     pub fn config(&self) -> &Config {

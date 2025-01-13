@@ -11,7 +11,7 @@ pub fn start(container_id: String) -> Result<(), ContainerErr> {
 
     debug!("opening FIFO");
     let _ = OpenOptions::new()
-        .write(true)
+        
         .append(true)
         .open(&fifo_path)
         .map_err(|e| ContainerErr::Fifo(format!("err: {:?}", e)))?;

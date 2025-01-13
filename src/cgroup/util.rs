@@ -89,12 +89,12 @@ pub fn read_nested_keyed_file<P: AsRef<Path>>(
 ) -> Result<HashMap<String, HashMap<String, String>>, ContainerErr> {
     let mut data = HashMap::new();
 
-    let f = File::open(path).map_err(|e| ContainerErr::IO(e))?;
+    let f = File::open(path).map_err(ContainerErr::IO)?;
     let reader = BufReader::new(f);
 
     for line in reader.lines() {
         let mut sub_map = HashMap::new();
-        let line = line.map_err(|e| ContainerErr::IO(e))?;
+        let line = line.map_err(ContainerErr::IO)?;
 
         let mut split = line.split(" ");
         let key = split.next();
@@ -133,8 +133,8 @@ pub fn write_nested_keyed_file<P: AsRef<Path>>(
         .write(true)
         .truncate(true)
         .open(path)
-        .map_err(|e| ContainerErr::IO(e))?;
-    f.write_all(s.as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+        .map_err(ContainerErr::IO)?;
+    f.write_all(s.as_bytes()).map_err(ContainerErr::IO)?;
     Ok(())
 }
 
@@ -155,8 +155,8 @@ pub fn write_flat_keyed_file<P: AsRef<Path>>(
         .write(true)
         .truncate(true)
         .open(path)
-        .map_err(|e| ContainerErr::IO(e))?;
-    f.write_all(s.as_bytes()).map_err(|e| ContainerErr::IO(e))?;
+        .map_err(ContainerErr::IO)?;
+    f.write_all(s.as_bytes()).map_err(ContainerErr::IO)?;
     Ok(())
 }
 

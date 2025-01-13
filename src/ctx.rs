@@ -8,8 +8,8 @@ use std::{
     path::{Path, PathBuf},
 };
 
-pub const STATE_FILENAME: &'static str = "state.json";
-const BASE_DIR: &'static str = "/run/generic_brand_container_runtime";
+pub const STATE_FILENAME: &str = "state.json";
+const BASE_DIR: &str = "/run/generic_brand_container_runtime";
 
 /// Container runtime settings
 #[derive(Clone)]
@@ -49,7 +49,7 @@ pub fn setup_ctx() -> Result<Ctx, ContainerErr> {
     if let Err(e) = fs::metadata(&ctx.state_dir) {
         if e.kind() == ErrorKind::NotFound {
             debug!("state dir not found, creating...");
-            fs::create_dir(&ctx.state_dir).map_err(|e| ContainerErr::IO(e))?;
+            fs::create_dir(&ctx.state_dir).map_err(ContainerErr::IO)?;
         } else {
             return Err(ContainerErr::IO(e));
         }

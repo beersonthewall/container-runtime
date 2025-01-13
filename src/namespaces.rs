@@ -54,7 +54,7 @@ pub fn join_namspaces(namespaces: &[Namespace]) -> Result<(), ContainerErr> {
         if let Some(path) = &ns.path {
             debug!("joining namespace: {:?}", ns);
 
-            let f = File::open(path).map_err(|e| ContainerErr::IO(e))?;
+            let f = File::open(path).map_err(ContainerErr::IO)?;
             let fd = f.as_raw_fd();
             let nstype = if let Some(nstype) = ns_type(&ns.typ) {
                 nstype
