@@ -1,10 +1,11 @@
+use libc::c_int;
+
 use crate::mount::MountErr;
 
 #[derive(Debug)]
 pub enum ContainerErr {
     Args(String),
     Bundle(String),
-    Child(String),
     IO(std::io::Error),
     Cgroup(String),
     State(String),
@@ -19,6 +20,7 @@ pub enum ContainerErr {
     RootFs(String),
     Mount(MountErr),
     Options(String),
+    Child((c_int, String)),
 }
 
 impl ContainerErr {

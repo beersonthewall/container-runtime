@@ -14,7 +14,6 @@ use libc::{__errno_location, c_int, c_void, write, EINTR};
 use log::debug;
 use std::fs::OpenOptions;
 use std::path::{Path, PathBuf};
-use std::process::exit;
 
 /// Init arguments
 pub struct InitArgs {
@@ -27,37 +26,22 @@ pub struct InitArgs {
 }
 
 /// First thing that runs in a new container process.
-pub fn init(mut args: InitArgs) -> c_int {
+pub fn init(mut args: InitArgs) -> Result<(), ContainerErr> {
     let pid = std::process::id();
     args.container.state_mut().set_pid(pid);
 
-    if let Err(e) = join_namspaces(&args.join_ns) {
-        debug!("join_namespaces {:?}", e);
-        exit(1);
-    }
+    join_namspaces(&args.join_ns)?;
 
     clear_env();
     populate_env(args.container.config());
 
-    if let Err(e) = set_rlimits(args.container.config()) {
-        debug!("set_rlimits {:?}", e);
-        exit(1);
-    }
+    set_rlimits(args.container.config())?;
 
-    if let Err(e) = set_iopriority(args.container.config()) {
-        debug!("set_iopriority {:?}", e);
-        exit(1);
-    }
+    set_iopriority(args.container.config())?;
 
-    if let Err(e) = setup_rootfs(args.container.config(), args.bundle_path) {
-        debug!("setup_rootfs {:?}", e);
-        exit(1);
-    }
+    setup_rootfs(args.container.config(), args.bundle_path)?;
 
-    if let Err(e) = setup_mounts(args.container.config()) {
-        debug!("setup_mounts {:?}", e);
-        exit(1);
-    }
+    setup_mounts(args.container.config())?;
 
     // Write exit code to pipe for parent process
     notify_container_ready(args.rdy_pipe_write_fd);
@@ -66,13 +50,11 @@ pub fn init(mut args: InitArgs) -> c_int {
     // sent. Opening the fifo is the signal.
     wait_for_exec(&args.fifo_path);
 
-    if let Err(e) = exec(args.container) {
-        debug!("exec error {:?}", e);
-        exit(1);
-    }
+    exec(args.container)?;
+
     debug!("container successfully created");
 
-    0
+    Ok(())
 }
 
 fn notify_container_ready(fd: c_int) {

@@ -137,15 +137,7 @@ fn init_container_proc(
     debug!("PID: {}", pid);
     if pid == 0 {
         // child process
-        let err = init(init_args);
-        if err != 0 {
-            Err(ContainerErr::Child(format!(
-                "child process crashed exit code {}",
-                err
-            )))
-        } else {
-            Ok(())
-        }
+        init(init_args)?;
     } else {
         // parent
         // Read child process ready status
@@ -165,9 +157,8 @@ fn init_container_proc(
         if ret > 0 {
             return Err(ContainerErr::Init("Error initializing container process"));
         }
-
-        Ok(())
     }
+    Ok(())
 }
 
 /// Reads from a pipe and retries interrupted reads until sucessful or encounters
