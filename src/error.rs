@@ -19,6 +19,7 @@ pub enum ContainerErr {
     Clone(String),
     RootFs(String),
     Mount(MountErr),
+    MountType(String),
     Options(String),
     Child((c_int, String)),
 }

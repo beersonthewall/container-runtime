@@ -14,7 +14,11 @@ pub fn setup_mounts(config: &Config) -> Result<(), ContainerErr> {
         for mnt in mounts {
             let mut flags = 0;
             let mut fs_opts = Vec::<String>::new();
-            let src = if let Some(src) = &mnt.source { src } else { "" };
+            let src = if mnt.source.is_some() && mnt.typ.is_none() {
+		mnt.source.as_ref().unwrap()
+	    } else {
+		""
+	    };
 
             if let Some(opts) = &mnt.options {
                 flags |= parse_mount_options(opts, &mut fs_opts);
@@ -24,10 +28,17 @@ pub fn setup_mounts(config: &Config) -> Result<(), ContainerErr> {
                 ContainerErr::Options(format!("could not convert options to cstring: {}", e))
             })?;
 
+	    let t = if let Some(t) = mnt.typ.as_ref() {
+		CString::new(t.as_bytes()).map_err(|e| ContainerErr::MountType(format!("mount type cstring conversion failed: {}", e)))?
+	    } else {
+		CString::new("".as_bytes()).unwrap()
+	    };
+
+
             mount(
                 src,
                 &mnt.destination,
-                c"",
+                t.as_c_str(),
                 flags,
                 Some(fs_opts.as_ptr() as *const c_void),
             )
@@ -58,7 +69,7 @@ pub fn mount<S: AsRef<Path>, T: AsRef<Path>>(
     let ptr = data.unwrap_or(std::ptr::null());
 
     let err = unsafe { libc::mount(src.as_ptr(), target.as_ptr(), fstype.as_ptr(), flags, ptr) };
-    if err > 0 {
+    if err != 0 {
         return Err(MountErr::Generic(format!(
             "exit code: {}, errno {}",
             err,
@@ -118,3 +129,4 @@ fn parse_mount_options(options: &[String], fs_opts: &mut Vec<String>) -> c_ulong
 
     flags
 }
+
