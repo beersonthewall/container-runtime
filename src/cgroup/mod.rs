@@ -16,6 +16,7 @@ use util::{read_flat_keyed_file, read_nested_keyed_file, write_nested_keyed_file
 use crate::config::{BlockIO, Config, Cpu, DevThrottle, HugePageLimits, Memory, Pids, Rdma};
 use crate::error::ContainerErr;
 
+#[allow(dead_code)]
 #[derive(Debug, Eq, PartialEq)]
 pub enum CgroupVersion {
     V1,
@@ -141,7 +142,7 @@ pub fn resolve_cgroup_path<P: AsRef<Path>>(
 /// Write values from cgroup memory config into the appropriate files
 fn set_cgroup_memory<P: AsRef<Path>>(cgroup: P, memory: &Memory) -> Result<(), ContainerErr> {
     debug!("cgroup memory");
-    let current = String::new();
+    //let current = String::new();
     //File::read_to_string("memory.current", &current).map_err(|e| ContainerErr::IO(e))?;
 
     if let Some(val) = memory.limit {

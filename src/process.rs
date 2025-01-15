@@ -45,7 +45,7 @@ pub fn clone3(flags: c_int, cgroup_fd: RawFd) -> Result<Pid, ContainerErr> {
     let pid = unsafe {
         syscall(
             SYS_clone3,
-            &raw mut args as *mut clone_args,
+            &raw mut args,
             size_of::<clone_args>(),
         )
     };

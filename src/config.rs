@@ -165,8 +165,8 @@ pub struct Root {
 
 /// Mount configuration
 /// https://github.com/opencontainers/runtime-spec/blob/main/config.md#mounts
-#[serde(rename_all = "camelCase")]
 #[derive(Clone, Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
 #[repr(C)]
 pub struct Mount {
     pub destination: String,

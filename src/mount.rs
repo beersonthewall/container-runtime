@@ -55,7 +55,7 @@ pub fn mount<S: AsRef<Path>, T: AsRef<Path>>(
     let target = CString::new(target.as_ref().as_os_str().as_bytes())
         .map_err(|e| MountErr::InvalidPath(format!("{:?}", e)))?;
 
-    let ptr = data.unwrap_or(std::ptr::null() as *const c_void);
+    let ptr = data.unwrap_or(std::ptr::null());
 
     let err = unsafe { libc::mount(src.as_ptr(), target.as_ptr(), fstype.as_ptr(), flags, ptr) };
     if err > 0 {

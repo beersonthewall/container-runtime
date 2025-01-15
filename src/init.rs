@@ -73,7 +73,7 @@ fn notify_container_ready(fd: c_int) {
 }
 
 /// Won't return on success.
-fn exec(container: Container) -> Result<(), ContainerErr> {
+fn exec(_container: Container) -> Result<(), ContainerErr> {
     Ok(())
 }
 

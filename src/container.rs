@@ -41,7 +41,7 @@ impl Container {
         let container_dir = ctx.state_dir(self.state.id());
         let container_state_path = container_dir.join("state.json");
 
-        if let Err(_) = fs::metadata(&container_dir) {
+        if fs::metadata(&container_dir).is_err() {
             fs::create_dir(&container_dir).map_err(ContainerErr::IO)?;
         }
 

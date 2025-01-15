@@ -59,7 +59,7 @@ fn set_rlimit(resource: __rlimit_resource_t, rlimit: &RLimit) -> Result<(), Cont
         rlim.rlim_cur = rlimit.soft;
         rlim.rlim_max = rlimit.hard;
 
-        let err = setrlimit(resource, &mut rlim);
+        let err = setrlimit(resource, &rlim);
         if err == -1 {
             return Err(ContainerErr::Rlimit(format!(
                 "setrlimit: resource {}, errno: {}",
